@@ -8,6 +8,10 @@ const pngRoutes = require("./routes/pngRoutes");
 
 const app = express();
 
+app.get("/", (req, res) => {
+  res.send("PNGfam Backend API is running 🚀");
+});
+
 /* 🌍 Allow production domain later */
 app.use(cors({
   origin: "*", // later change to your domain
@@ -23,11 +27,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /* API routes */
 app.use("/api/pngs", pngRoutes);
-
-/* 🔥 SPA fallback (important for /image/slug URLs) */
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
