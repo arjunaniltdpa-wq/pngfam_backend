@@ -4,10 +4,22 @@ const PngImage = require("../models/PngImage");
 
 const CDN = "https://cdn.pngfam.com";
 
-// helper to ensure leading slash
-const addSlash = (url) => {
+/**
+ * Convert stored URL → CDN URL correctly
+ * Handles:
+ * 1. Full R2 dev URL
+ * 2. Already relative path
+ */
+const fixUrl = (url) => {
   if (!url) return null;
-  return url.startsWith("/") ? url : "/" + url;
+
+  // remove full R2 public dev domain if present
+  url = url.replace(/^https?:\/\/[^\/]+\.r2\.dev/i, "");
+
+  // ensure leading slash
+  if (!url.startsWith("/")) url = "/" + url;
+
+  return CDN + url;
 };
 
 /**
@@ -25,7 +37,7 @@ router.get("/", async (req, res) => {
         $or: [
           { title: { $regex: search, $options: "i" } },
           { tags: { $regex: search, $options: "i" } },
-        ]
+        ],
       };
     }
 
@@ -34,14 +46,12 @@ router.get("/", async (req, res) => {
       .limit(50)
       .select("slug title thumbUrl width height");
 
-    // attach CDN prefix safely
-    const updated = pngs.map(png => ({
+    const updated = pngs.map((png) => ({
       ...png.toObject(),
-      thumbUrl: png.thumbUrl ? CDN + addSlash(png.thumbUrl) : null
+      thumbUrl: fixUrl(png.thumbUrl),
     }));
 
     res.json(updated);
-
   } catch (err) {
     console.error("PNG fetch/search error:", err);
     res.status(500).json({ error: "Failed to fetch PNGs" });
@@ -59,11 +69,10 @@ router.get("/:slug", async (req, res) => {
 
     res.json({
       ...png.toObject(),
-      originalUrl: CDN + addSlash(png.originalUrl),
-      previewUrl: CDN + addSlash(png.previewUrl),
-      thumbUrl: CDN + addSlash(png.thumbUrl),
+      originalUrl: fixUrl(png.originalUrl),
+      previewUrl: fixUrl(png.previewUrl),
+      thumbUrl: fixUrl(png.thumbUrl),
     });
-
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -81,7 +90,7 @@ router.get("/:slug/download", async (req, res) => {
       return res.status(404).json({ error: "PNG not found" });
     }
 
-    // increment downloads
+    // increment download count
     png.downloads = (png.downloads || 0) + 1;
     await png.save();
 
@@ -92,8 +101,7 @@ router.get("/:slug/download", async (req, res) => {
     res.setHeader("Content-Type", "image/png");
 
     // redirect to CDN image
-    return res.redirect(CDN + addSlash(png.originalUrl));
-
+    return res.redirect(fixUrl(png.originalUrl));
   } catch (err) {
     console.error("Download error:", err);
     res.status(500).json({ error: "Download failed" });
