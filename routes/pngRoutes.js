@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const PngImage = require("../models/PngImage");
 
+const CDN = "https://cdn.pngfam.com";
+
 /**
  * GET /api/pngs
  * List PNGs (grid + search)
@@ -29,7 +31,14 @@ router.get("/", async (req, res) => {
       .limit(50)
       .select("slug title thumbUrl width height");
 
-    res.json(pngs);
+    // 🔥 Attach CDN prefix to thumbnails
+    const updated = pngs.map(png => ({
+      ...png.toObject(),
+      thumbUrl: png.thumbUrl ? CDN + png.thumbUrl : null
+    }));
+
+    res.json(updated);
+
   } catch (err) {
     console.error("PNG fetch/search error:", err);
     res.status(500).json({ error: "Failed to fetch PNGs" });
@@ -43,14 +52,18 @@ router.get("/", async (req, res) => {
 router.get("/:slug", async (req, res) => {
   try {
     const png = await PngImage.findOne({ slug: req.params.slug });
+    if (!png) return res.status(404).json({ error: "Not found" });
 
-    if (!png) {
-      return res.status(404).json({ error: "PNG not found" });
-    }
+    res.json({
+      ...png.toObject(),
+      originalUrl: png.originalUrl ? CDN + png.originalUrl : null,
+      previewUrl: png.previewUrl ? CDN + png.previewUrl : null,
+      thumbUrl: png.thumbUrl ? CDN + png.thumbUrl : null,
+    });
 
-    res.json(png);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch PNG" });
+    console.error("Single PNG error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -66,22 +79,22 @@ router.get("/:slug/download", async (req, res) => {
       return res.status(404).json({ error: "PNG not found" });
     }
 
-    // Increment download count (optional but recommended)
+    // Increment download count
     png.downloads = (png.downloads || 0) + 1;
     await png.save();
 
-    // Force SEO filename on download
+    // SEO filename
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${png.slug}.png"`
     );
     res.setHeader("Content-Type", "image/png");
 
-    // Redirect stream from R2
-    return res.redirect(png.originalUrl);
+    // 🔥 Redirect to CDN image instead of local path
+    return res.redirect(CDN + png.originalUrl);
 
   } catch (err) {
-    console.error(err);
+    console.error("Download error:", err);
     res.status(500).json({ error: "Download failed" });
   }
 });
