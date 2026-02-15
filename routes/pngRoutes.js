@@ -4,11 +4,15 @@ const PngImage = require("../models/PngImage");
 
 const CDN = "https://cdn.pngfam.com";
 
+// helper to ensure leading slash
+const addSlash = (url) => {
+  if (!url) return null;
+  return url.startsWith("/") ? url : "/" + url;
+};
+
 /**
  * GET /api/pngs
  * List PNGs (grid + search)
- * /api/pngs
- * /api/pngs?search=muscle
  */
 router.get("/", async (req, res) => {
   try {
@@ -21,7 +25,6 @@ router.get("/", async (req, res) => {
         $or: [
           { title: { $regex: search, $options: "i" } },
           { tags: { $regex: search, $options: "i" } },
-          { category: { $regex: search, $options: "i" } }
         ]
       };
     }
@@ -31,10 +34,10 @@ router.get("/", async (req, res) => {
       .limit(50)
       .select("slug title thumbUrl width height");
 
-    // 🔥 Attach CDN prefix to thumbnails
+    // attach CDN prefix safely
     const updated = pngs.map(png => ({
       ...png.toObject(),
-      thumbUrl: png.thumbUrl ? CDN + png.thumbUrl : null
+      thumbUrl: png.thumbUrl ? CDN + addSlash(png.thumbUrl) : null
     }));
 
     res.json(updated);
@@ -56,13 +59,12 @@ router.get("/:slug", async (req, res) => {
 
     res.json({
       ...png.toObject(),
-      originalUrl: png.originalUrl ? CDN + png.originalUrl : null,
-      previewUrl: png.previewUrl ? CDN + png.previewUrl : null,
-      thumbUrl: png.thumbUrl ? CDN + png.thumbUrl : null,
+      originalUrl: CDN + addSlash(png.originalUrl),
+      previewUrl: CDN + addSlash(png.previewUrl),
+      thumbUrl: CDN + addSlash(png.thumbUrl),
     });
 
   } catch (err) {
-    console.error("Single PNG error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -79,19 +81,18 @@ router.get("/:slug/download", async (req, res) => {
       return res.status(404).json({ error: "PNG not found" });
     }
 
-    // Increment download count
+    // increment downloads
     png.downloads = (png.downloads || 0) + 1;
     await png.save();
 
-    // SEO filename
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${png.slug}.png"`
     );
     res.setHeader("Content-Type", "image/png");
 
-    // 🔥 Redirect to CDN image instead of local path
-    return res.redirect(CDN + png.originalUrl);
+    // redirect to CDN image
+    return res.redirect(CDN + addSlash(png.originalUrl));
 
   } catch (err) {
     console.error("Download error:", err);
