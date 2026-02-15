@@ -19,6 +19,9 @@ app.use(cors({
 
 app.use(express.json());
 
+const ogRoutes = require("./routes/ogRoutes");
+app.use("/api/og", ogRoutes);
+
 // connect database
 connectDB();
 
