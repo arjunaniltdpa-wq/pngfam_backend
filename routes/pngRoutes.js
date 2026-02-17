@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const PngImage = require("../models/PngImage");
-
 const CDN = "https://cdn.pngfam.com";
 
 /**
@@ -84,14 +83,29 @@ router.get("/:slug/download", async (req, res) => {
     png.downloads = (png.downloads || 0) + 1;
     await png.save();
 
+    const fileUrl = fixUrl(png.originalUrl);
+
+    // fetch file from CDN
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("Failed to fetch file");
+
+    // convert to buffer (IMPORTANT)
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // force download headers
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${png.slug}.png"`
     );
-    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Length", buffer.length);
 
-    return res.redirect(fixUrl(png.originalUrl));
+    // send file directly (no redirect, no pipe)
+    res.end(buffer);
+
   } catch (err) {
+    console.error("Download error:", err);
     res.status(500).json({ error: "Download failed" });
   }
 });
