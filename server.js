@@ -37,10 +37,20 @@ app.listen(PORT, () => {
   console.log(`🚀 PNG backend running on port ${PORT}`);
 });
 
-/* Sitemap */
-app.get("/sitemap-images.xml", async (req, res) => {
+/* =========================
+   IMAGE SITEMAP (PAGINATED)
+========================= */
+app.get("/sitemap-images-:page.xml", async (req, res) => {
   try {
-    const pngs = await PngImage.find().select("slug updatedAt originalUrl");
+    const page = parseInt(req.params.page) || 1;
+    const limit = 5000; // Google max per sitemap
+    const skip = (page - 1) * limit;
+
+    const pngs = await PngImage.find({})
+      .sort({ _id: 1 })
+      .skip(skip)
+      .limit(limit)
+      .select("slug updatedAt originalUrl");
 
     const baseUrl = "https://www.pngfam.com";
 
@@ -58,12 +68,13 @@ app.get("/sitemap-images.xml", async (req, res) => {
     pngs.forEach(png => {
       xml += `
         <url>
-          <loc>${baseUrl}/image/${png.slug}</loc>
+          <loc>${baseUrl}/image.html?slug=${png.slug}</loc>
           <lastmod>${png.updatedAt?.toISOString() || new Date().toISOString()}</lastmod>
           <changefreq>weekly</changefreq>
           <priority>0.8</priority>
           <image:image>
             <image:loc>${fixUrl(png.originalUrl)}</image:loc>
+            <image:title>${png.slug.replace(/-/g,' ')}</image:title>
           </image:image>
         </url>`;
     });
@@ -72,26 +83,38 @@ app.get("/sitemap-images.xml", async (req, res) => {
 
     res.header("Content-Type", "application/xml");
     res.send(xml);
+
   } catch (err) {
     console.error(err);
     res.status(500).end();
   }
 });
 
-app.get("/sitemap.xml", (req, res) => {
+
+/* =========================
+   MAIN SITEMAP INDEX
+========================= */
+app.get("/sitemap.xml", async (req, res) => {
   const baseUrl = "https://www.pngfam.com";
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  const totalImages = await PngImage.countDocuments();
+  const totalPages = Math.ceil(totalImages / 50000);
+
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
   <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <sitemap>
       <loc>${baseUrl}/sitemap-static.xml</loc>
-    </sitemap>
+    </sitemap>`;
 
+  for (let i = 1; i <= totalPages; i++) {
+    xml += `
     <sitemap>
-      <loc>${baseUrl}/sitemap-images.xml</loc>
-    </sitemap>
+      <loc>${baseUrl}/sitemap-images-${i}.xml</loc>
+    </sitemap>`;
+  }
 
+  xml += `
   </sitemapindex>`;
 
   res.header("Content-Type", "application/xml");
