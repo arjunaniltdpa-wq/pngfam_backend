@@ -227,3 +227,12 @@ app.get("/sitemap.xml", async (req, res) => {
 
   res.send(xml);
 });
+
+/* =========================
+   START SERVER (RENDER FIX)
+========================= */
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 PNG backend running on port ${PORT}`);
+});
