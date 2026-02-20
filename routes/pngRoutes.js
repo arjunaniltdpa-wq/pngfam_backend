@@ -61,11 +61,24 @@ router.get("/:slug", async (req, res) => {
     const png = await PngImage.findOne({ slug: req.params.slug });
     if (!png) return res.status(404).json({ error: "Not found" });
 
+    const originalUrl = fixUrl(png.originalUrl);
+
+    // auto-generate preview if not stored
+    let previewUrl = png.previewUrl
+      ? fixUrl(png.previewUrl)
+      : originalUrl
+          ?.replace("/originals/", "/previews/")
+          .replace(".png", ".webp");
+
+    const thumbUrl = png.thumbUrl
+      ? fixUrl(png.thumbUrl)
+      : previewUrl?.replace("/previews/", "/thumbs/");
+
     res.json({
       ...png.toObject(),
-      originalUrl: fixUrl(png.originalUrl),
-      previewUrl: fixUrl(png.previewUrl),
-      thumbUrl: fixUrl(png.thumbUrl),
+      originalUrl,
+      previewUrl,
+      thumbUrl,
     });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
