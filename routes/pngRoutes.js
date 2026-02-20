@@ -61,18 +61,24 @@ router.get("/:slug", async (req, res) => {
     const png = await PngImage.findOne({ slug: req.params.slug });
     if (!png) return res.status(404).json({ error: "Not found" });
 
-    const originalUrl = fixUrl(png.originalUrl);
+    // Get raw path (without CDN)
+    let rawOriginal = png.originalUrl || "";
 
-    // auto-generate preview if not stored
-    let previewUrl = png.previewUrl
-      ? fixUrl(png.previewUrl)
-      : originalUrl
-          ?.replace("/originals/", "/previews/")
-          .replace(".png", ".webp");
+    rawOriginal = rawOriginal.replace(/^https?:\/\/[^\/]+/i, "");
 
-    const thumbUrl = png.thumbUrl
-      ? fixUrl(png.thumbUrl)
-      : previewUrl?.replace("/previews/", "/thumbs/");
+    if (!rawOriginal.startsWith("/")) rawOriginal = "/" + rawOriginal;
+
+    const originalUrl = CDN + rawOriginal;
+
+    // Build preview + thumb safely
+    const previewPath = rawOriginal
+      .replace("/originals/", "/previews/")
+      .replace(".png", ".webp");
+
+    const thumbPath = previewPath.replace("/previews/", "/thumbs/");
+
+    const previewUrl = CDN + previewPath;
+    const thumbUrl = CDN + thumbPath;
 
     res.json({
       ...png.toObject(),
@@ -80,7 +86,9 @@ router.get("/:slug", async (req, res) => {
       previewUrl,
       thumbUrl,
     });
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
