@@ -25,14 +25,9 @@ app.use("/api/og", ogRoutes);
 /* Connect DB */
 connectDB();
 
-/* =========================
-   FRONTEND ROUTING (CLEAN URLs)
-========================= */
+/* FRONTEND ROUTING */
 
-/* Serve static frontend files */
-app.use(express.static(path.join(__dirname, "public")));
-
-/* Redirect old query URLs -> clean URLs */
+/* Redirect old query URLs */
 app.get("/image", (req, res) => {
   if (req.query.slug) {
     return res.redirect(301, `/image/${req.query.slug}`);
@@ -40,10 +35,13 @@ app.get("/image", (req, res) => {
   return res.redirect("/");
 });
 
-/* Clean image URL handler */
+/* Clean image page */
 app.get("/image/:slug", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "image.html"));
 });
+
+/* Serve static frontend files */
+app.use(express.static(path.join(__dirname, "public")));
 /* =========================
    API ROUTES
 ========================= */
