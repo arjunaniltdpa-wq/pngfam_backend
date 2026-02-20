@@ -44,12 +44,6 @@ app.get("/image", (req, res) => {
 app.get("/image/:slug", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "image.html"));
 });
-
-/* Fallback for refresh / direct open on clean URLs */
-app.get("/image/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "image.html"));
-});
-
 /* =========================
    API ROUTES
 ========================= */
