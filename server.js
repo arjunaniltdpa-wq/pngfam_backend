@@ -16,7 +16,6 @@ app.get("/", (req, res) => {
 
 /* CORS */
 app.use(cors({ origin: "*" }));
-
 app.use(express.json());
 
 /* OG routes */
@@ -26,21 +25,36 @@ app.use("/api/og", ogRoutes);
 /* Connect DB */
 connectDB();
 
-/* Serve frontend */
+/* =========================
+   FRONTEND ROUTING (CLEAN URLs)
+========================= */
+
+/* Serve static frontend files */
 app.use(express.static(path.join(__dirname, "public")));
 
+/* Redirect old query URLs -> clean URLs */
 app.get("/image", (req, res) => {
   if (req.query.slug) {
     return res.redirect(301, `/image/${req.query.slug}`);
   }
-  res.redirect("/");
+  return res.redirect("/");
 });
 
+/* Clean image URL handler */
 app.get("/image/:slug", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "image.html"));
 });
-/* API */
+
+/* Fallback for refresh / direct open on clean URLs */
+app.get("/image/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "image.html"));
+});
+
+/* =========================
+   API ROUTES
+========================= */
 app.use("/api/pngs", pngRoutes);
+
 /* =========================
    XML ESCAPE HELPER
 ========================= */
@@ -50,8 +64,6 @@ const escapeXml = (str = "") =>
      .replace(/>/g, "&gt;")
      .replace(/"/g, "&quot;")
      .replace(/'/g, "&apos;");
-
-
 /* =========================
    STATIC PAGES SITEMAP
 ========================= */
