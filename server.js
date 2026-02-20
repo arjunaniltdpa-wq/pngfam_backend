@@ -26,14 +26,19 @@ app.use("/api/og", ogRoutes);
 /* Connect DB */
 connectDB();
 
-/* Clean Image URL Route */
-app.get("/image/:slug", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "image.html"));
-});
-
 /* Serve frontend */
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/image", (req, res) => {
+  if (req.query.slug) {
+    return res.redirect(301, `/image/${req.query.slug}`);
+  }
+  res.redirect("/");
+});
+
+app.get("/image/:slug", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "image.html"));
+});
 /* API */
 app.use("/api/pngs", pngRoutes);
 /* =========================
