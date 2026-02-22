@@ -167,8 +167,24 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
       // optional small thumbnail
       const thumbUrl = previewUrl.replace("/previews/", "/thumbs/");
 
-      const caption = `Download high-quality ${cleanTitle} PNG with transparent background. Free HD image for graphic design, social media, presentations, and commercial use.`;
+      const keywords = [
+        "graphic design",
+        "web design",
+        "advertisements",
+        "social media posts",
+        "presentations",
+        "posters",
+        "UI/UX design",
+        "branding",
+        "digital marketing",
+        "creative projects"
+      ].join(", ");
 
+      const caption = `Download high-quality ${cleanTitle} PNG with transparent background in ultra HD resolution. 
+      Free ${cleanTitle} transparent PNG perfect for graphic design, web design, advertisements, social media posts, presentations, posters, thumbnails, UI/UX design, branding, digital marketing and creative projects. 
+      This premium royalty-free PNG image features sharp details, clean cutout edges and optimized colors suitable for designers, developers, bloggers and marketers. 
+      Use this ${cleanTitle} PNG image for websites, apps, YouTube thumbnails, product mockups, presentations and professional marketing creatives requiring transparent background graphics.`;
+      
       const ageDays = (Date.now() - new Date(png.updatedAt)) / (1000 * 60 * 60 * 24);
       const changefreq = ageDays < 30 ? "weekly" : "yearly";
 
@@ -181,8 +197,7 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
 
     <image:image>
       <image:loc>${escapeXml(previewUrl)}</image:loc>
-      <image:thumbnail_loc>${escapeXml(thumbUrl)}</image:thumbnail_loc>
-      <image:title>${escapeXml(cleanTitle)} PNG Transparent Background</image:title>
+      <image:title>${escapeXml(cleanTitle)}</image:title>
       <image:caption>${escapeXml(caption)}</image:caption>
       <image:license>${baseUrl}/license</image:license>
     </image:image>
