@@ -2,15 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fetch = require("node-fetch");
 
 const { connectDB } = require("./lib/db");
 const pngRoutes = require("./routes/pngRoutes");
 const PngImage = require("./models/PngImage");
 
 const app = express();
-
-app.set("view engine", "ejs");
 
 /* Root */
 app.get("/", (req, res) => {
@@ -37,23 +34,9 @@ app.get("/image", (req, res) => {
   res.redirect("/");
 });
 
-app.get("/image/:slug", async (req, res) => {
-  try {
-    const slug = req.params.slug;
-
-    const png = await PngImage.findOne({ slug });
-    if (!png) return res.status(404).send("Not found");
-
-    const related = await PngImage.find({ slug: { $ne: slug } })
-      .limit(6)
-      .select("slug title thumbUrl");
-
-    res.render("image", { png, related });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
+/* Clean SEO URL -> serve image.html */
+app.get("/image/:slug", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "image.html"));
 });
 
 /* Static frontend */
