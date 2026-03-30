@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<title><%= png.title %> PNG Transparent Background Free Download</title>
+
+<meta name="description"
+content="Download <%= png.title %> PNG with transparent background in HD quality.">
+
+<link rel="canonical"
+href="http://localhost:3000/image/<%= png.slug %>">
+
+<meta property="og:title"
+content="<%= png.title %> PNG Transparent Background">
+
+<meta property="og:image"
+content="<%= png.previewUrl %>">
+
+<meta property="og:url"
+content="http://localhost:3000/image/<%= png.slug %>">
+
+<meta name="robots" content="index, follow">
+
+</head>
+
+<body>
+
+<h1><%= png.title %> PNG</h1>
+
+<img 
+src="<%= png.previewUrl %>"
+alt="<%= png.title %> PNG transparent background free download"
+width="1200"
+height="1200"
+>
+
+<p>
+Download <%= png.title %> PNG with transparent background in high resolution.
+This image is perfect for design, UI, ads and creative projects.
+Resolution: <%= png.width %> × <%= png.height %>.
+</p>
+
+<a href="<%= png.originalUrl %>">Download PNG</a>
+
+<h2>Related PNG Images</h2>
+
+<div>
+<% related.forEach(img => { %>
+  <a href="/image/<%= img.slug %>">
+    <img src="<%= img.thumbUrl %>" width="200">
+  </a>
+<% }) %>
+</div>
+
+</body>
+</html>
