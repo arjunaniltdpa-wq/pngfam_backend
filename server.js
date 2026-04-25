@@ -13,32 +13,30 @@ const app = express();
 app.get("/", async (req, res) => {
   const pngs = await PngImage.find().limit(50);
 
-  let html = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>Free Transparent PNG Images</title>
-    <meta name="description" content="Download free PNG images with transparent background">
-  </head>
+  let html = fs.readFileSync(
+    path.join(__dirname, "public", "index.html"),
+    "utf-8"
+  );
 
-  <body>
-    <h1>Free Transparent PNG Images</h1>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;">
-  `;
+  let gridHTML = "";
 
   pngs.forEach(png => {
-    html += `
-      <a href="/image/${png.slug}">
-        <img src="${png.thumbUrl}" alt="${png.title}" width="200">
+    gridHTML += `
+      <a href="/image/${png.slug}" class="card-link">
+        <div class="card png-bg">
+          <div class="card-image">
+            <img src="${png.thumbUrl}" alt="${png.title}" loading="eager">
+          </div>
+          <div class="card-title">${png.title}</div>
+        </div>
       </a>
     `;
   });
 
-  html += `
-    </div>
-  </body>
-  </html>
-  `;
+  html = html.replace(
+    '<div class="masonry" id="pngGrid"></div>',
+    `<div class="masonry">${gridHTML}</div>`
+  );
 
   res.send(html);
 });
@@ -63,7 +61,8 @@ app.get("/image", (req, res) => {
   res.redirect("/");
 });
 
-/* Clean SEO URL -> serve image.html */
+const fs = require("fs");
+
 app.get("/image/:slug", async (req, res) => {
   const png = await PngImage.findOne({ slug: req.params.slug });
 
@@ -71,36 +70,70 @@ app.get("/image/:slug", async (req, res) => {
     return res.status(404).send("Not found");
   }
 
-  res.send(`
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>${png.title} PNG Transparent Background Free Download</title>
-    <meta name="description" content="Download ${png.title} PNG with transparent background in HD quality. Free for personal and commercial use.">
-    <link rel="canonical" href="https://www.pngfam.com/image/${png.slug}">
-  </head>
+  // Load your existing HTML file
+  let html = fs.readFileSync(
+    path.join(__dirname, "public", "image.html"),
+    "utf-8"
+  );
+  html = html.replace(
+    '<link rel="canonical" id="canonicalLink" href="">',
+    `<link rel="canonical" href="https://www.pngfam.com/image/${png.slug}">`
+  );
+  html = html.replace(
+    '<meta property="og:description" content="Download high-quality PNG with transparent background.">',
+    `<meta property="og:description" content="Download ${png.title} PNG with transparent background in HD quality.">`
+  );
+  // Inject SEO (IMPORTANT)
+  html = html.replace(
+    "<title>Free Transparent PNG Images Download HD</title>",
+    `<title>${png.title} PNG Transparent Background Free Download</title>`
+  );
 
-  <body>
+  html = html.replace(
+    '<meta property="og:title" content="Free Transparent PNG Image Download">',
+    `<meta property="og:title" content="${png.title} PNG Transparent Background">`
+  );
 
-  <h1>${png.title} PNG Transparent Background</h1>
+  html = html.replace(
+    '<meta property="og:image" content="">',
+    `<meta property="og:image" content="${png.previewUrl || png.originalUrl}">`
+  );
 
-  <img src="${png.originalUrl}" alt="${png.title} PNG transparent background free download" width="800">
+  html = html.replace(
+    '<meta property="og:url" content="">',
+    `<meta property="og:url" content="https://www.pngfam.com/image/${png.slug}">`
+  );
 
-  <p>
-  Download high-quality ${png.title} PNG image with transparent background in HD resolution.
-  This free PNG is perfect for graphic design, websites, social media posts, presentations,
-  advertisements, and creative projects.
-  </p>
+  html = html.replace(
+    'content="Download high-quality transparent PNG images in HD resolution. Free PNG images for graphic design, websites, and creative projects."',
+    `content="Download ${png.title} PNG with transparent background in HD quality."`
+  );
 
-  <h2>About this PNG Image</h2>
-  <p>
-  This ${png.title} PNG comes with a clean transparent background, making it easy to use in any design.
-  You can use it for personal and commercial purposes without restrictions.
-  </p>
+  // Inject IMAGE + TITLE directly (CRITICAL)
+  html = html.replace(
+    /<img id="mainPreview"[^>]*>/,
+    `<img id="mainPreview"
+      src="${png.previewUrl || png.originalUrl}"
+      alt="${png.title} PNG transparent background"
+      width="1200"
+      height="1200"
+      loading="eager">`
+  );
 
-  </body>
-  </html>
-  `);
+  html = html.replace(
+    "<h1>Free Transparent PNG Image</h1>",
+    `<h1>${png.title} PNG Transparent Background</h1>`
+  );
+
+  html = html.replace(
+    /<p id="seoText">.*?<\/p>/,
+    `<p id="seoText">
+    Download ${png.title} PNG with transparent background in HD resolution.
+    Perfect for graphic design, websites, ads, and creative projects.
+    </p>`
+  );
+
+    res.send(html);
 });
 
 /* Static frontend */
