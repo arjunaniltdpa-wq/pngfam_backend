@@ -82,14 +82,21 @@ app.get("/image/:slug", async (req, res) => {
 
   <body>
 
-    <h1>${png.title} PNG Transparent Background</h1>
+  <h1>${png.title} PNG Transparent Background</h1>
 
-    <img src="${png.originalUrl}" alt="${png.title} PNG transparent background free download" width="800">
+  <img src="${png.originalUrl}" alt="${png.title} PNG transparent background free download" width="800">
 
-    <p>
-      Download high-quality ${png.title} PNG with transparent background.
-      Perfect for graphic design, websites, social media, and creative projects.
-    </p>
+  <p>
+  Download high-quality ${png.title} PNG image with transparent background in HD resolution.
+  This free PNG is perfect for graphic design, websites, social media posts, presentations,
+  advertisements, and creative projects.
+  </p>
+
+  <h2>About this PNG Image</h2>
+  <p>
+  This ${png.title} PNG comes with a clean transparent background, making it easy to use in any design.
+  You can use it for personal and commercial purposes without restrictions.
+  </p>
 
   </body>
   </html>
