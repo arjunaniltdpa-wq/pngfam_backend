@@ -10,8 +10,37 @@ const PngImage = require("./models/PngImage");
 const app = express();
 
 /* Root */
-app.get("/", (req, res) => {
-  res.send("PNGfam Backend API is running 🚀");
+app.get("/", async (req, res) => {
+  const pngs = await PngImage.find().limit(50);
+
+  let html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Free Transparent PNG Images</title>
+    <meta name="description" content="Download free PNG images with transparent background">
+  </head>
+
+  <body>
+    <h1>Free Transparent PNG Images</h1>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+  `;
+
+  pngs.forEach(png => {
+    html += `
+      <a href="/image/${png.slug}">
+        <img src="${png.thumbUrl}" alt="${png.title}" width="200">
+      </a>
+    `;
+  });
+
+  html += `
+    </div>
+  </body>
+  </html>
+  `;
+
+  res.send(html);
 });
 
 /* CORS */
@@ -35,8 +64,36 @@ app.get("/image", (req, res) => {
 });
 
 /* Clean SEO URL -> serve image.html */
-app.get("/image/:slug", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "image.html"));
+app.get("/image/:slug", async (req, res) => {
+  const png = await PngImage.findOne({ slug: req.params.slug });
+
+  if (!png) {
+    return res.status(404).send("Not found");
+  }
+
+  res.send(`
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>${png.title} PNG Transparent Background Free Download</title>
+    <meta name="description" content="Download ${png.title} PNG with transparent background in HD quality. Free for personal and commercial use.">
+    <link rel="canonical" href="https://www.pngfam.com/image/${png.slug}">
+  </head>
+
+  <body>
+
+    <h1>${png.title} PNG Transparent Background</h1>
+
+    <img src="${png.originalUrl}" alt="${png.title} PNG transparent background free download" width="800">
+
+    <p>
+      Download high-quality ${png.title} PNG with transparent background.
+      Perfect for graphic design, websites, social media, and creative projects.
+    </p>
+
+  </body>
+  </html>
+  `);
 });
 
 /* Static frontend */
