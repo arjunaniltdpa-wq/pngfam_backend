@@ -34,7 +34,7 @@ app.get("/", async (req, res) => {
   });
 
   html = html.replace(
-    '<div class="masonry" id="pngGrid"></div>',
+    /<div class="masonry" id="pngGrid"><\/div>/,
     `<div class="masonry">${gridHTML}</div>`
   );
 
@@ -143,6 +143,10 @@ app.get("/image/:slug", async (req, res) => {
     res.send(html);
 });
 
+/* Static frontend */
+app.use(express.static(path.join(__dirname, "public")));
+
+
 // 🔥 CATEGORY PAGE ROUTE
 app.get("/category/:name", async (req, res) => {
   const category = req.params.name.replace(/-/g, " ");
@@ -176,9 +180,6 @@ app.get("/category/:name", async (req, res) => {
 
   res.send(html);
 });
-
-/* Static frontend */
-app.use(express.static(path.join(__dirname, "public")));
 
 /* API */
 app.use("/api/pngs", pngRoutes);

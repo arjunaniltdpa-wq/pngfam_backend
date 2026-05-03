@@ -9,10 +9,8 @@ const CDN = "https://cdn.pngfam.com";
 const fixUrl = (url) => {
   if (!url) return null;
 
-  // remove full R2 dev domain if stored
   url = url.replace(/^https?:\/\/[^\/]+\.r2\.dev/i, "");
 
-  // ensure leading slash
   if (!url.startsWith("/")) url = "/" + url;
 
   return CDN + url;
@@ -25,12 +23,13 @@ const fixUrl = (url) => {
 router.get("/", async (req, res) => {
   try {
     const search = req.query.search?.trim();
+    const limit = parseInt(req.query.limit) || 50; // ✅ added
 
     let query = {};
     if (search) {
       query = {
         $or: [
-          { title: { $regex: search, $options: "i" } },
+          { title: { $regex: search, $options: "i" } }, // ✅ fixed
           { tags: { $regex: search, $options: "i" } }
         ]
       };
@@ -38,7 +37,7 @@ router.get("/", async (req, res) => {
 
     const pngs = await PngImage.find(query)
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(limit) // ✅ dynamic
       .select("slug title thumbUrl width height");
 
     const updated = pngs.map(png => ({
@@ -50,6 +49,120 @@ router.get("/", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch PNGs" });
+  }
+});
+
+/**
+ * Download
+ */
+router.get("/:slug/download", async (req, res) => {
+  try {
+    const png = await PngImage.findOne({ slug: req.params.slug });
+    if (!png) return res.status(404).json({ error: "PNG not found" });
+
+    png.downloads = (png.downloads || 0) + 1;
+    await png.save();
+
+    const fileUrl = fixUrl(png.originalUrl);
+
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("Failed to fetch file");
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${png.slug}.png"`
+    );
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Length", buffer.length);
+
+    res.end(buffer);
+
+  } catch (err) {
+    console.error("Download error:", err);
+    res.status(500).json({ error: "Download failed" });
+  }
+});
+
+/**
+ * 🔥 SEARCH API
+ */
+router.get("/search", async (req, res) => {
+  try {
+    const query = req.query.q;
+
+    if (!query) {
+      return res.json([]);
+    }
+
+    let results = await PngImage.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } }, // ✅ improved
+        { tags: { $regex: query, $options: "i" } }
+      ]
+    }).limit(50);
+
+    if (results.length === 0) {
+      results = await PngImage.find().limit(20);
+    }
+
+    const updated = results.map(png => ({
+      ...png.toObject(),
+      thumbUrl: fixUrl(png.thumbUrl)
+    }));
+
+    res.json(updated);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+/**
+ * 🔥 RELATED PNG IMAGES API
+ */
+router.get("/related/:slug", async (req, res) => {
+  try {
+    const slug = req.params.slug;
+
+    const current = await PngImage.findOne({ slug });
+
+    if (!current) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+
+    const keyword = current.title.split(" ").slice(0, 1).join(" ");
+
+    let related = await PngImage.find({
+      slug: { $ne: slug },
+      $or: [
+        { title: { $regex: keyword, $options: "i" } },
+        { tags: { $in: current.tags || [] } }
+      ]
+    }).limit(20);
+
+    // 🔥 fallback fill
+    if (related.length < 20) {
+      const extra = await PngImage.find({
+        slug: { $ne: slug }
+      }).limit(20 - related.length);
+
+      related = [...related, ...extra];
+    }
+    
+    const updated = related.map(png => ({
+      ...png.toObject(),
+      thumbUrl: fixUrl(png.thumbUrl)
+    }));
+
+    res.json(updated);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -71,72 +184,5 @@ router.get("/:slug", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
-/**
- * Download
- */
-router.get("/:slug/download", async (req, res) => {
-  try {
-    const png = await PngImage.findOne({ slug: req.params.slug });
-    if (!png) return res.status(404).json({ error: "PNG not found" });
-
-    png.downloads = (png.downloads || 0) + 1;
-    await png.save();
-
-    const fileUrl = fixUrl(png.originalUrl);
-
-    // fetch file from CDN
-    const response = await fetch(fileUrl);
-    if (!response.ok) throw new Error("Failed to fetch file");
-
-    // convert to buffer (IMPORTANT)
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // force download headers
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${png.slug}.png"`
-    );
-    res.setHeader("Content-Type", "application/octet-stream");
-    res.setHeader("Content-Length", buffer.length);
-
-    // send file directly (no redirect, no pipe)
-    res.end(buffer);
-
-  } catch (err) {
-    console.error("Download error:", err);
-    res.status(500).json({ error: "Download failed" });
-  }
-});
-
-// 🔥 RELATED PNG IMAGES API
-router.get("/related/:slug", async (req, res) => {
-  try {
-    const slug = req.params.slug;
-
-    const current = await PngImage.findOne({ slug });
-
-    if (!current) {
-      return res.status(404).json({ error: "Image not found" });
-    }
-
-    // Find similar images using tags OR title
-    const related = await PngImage.find({
-      slug: { $ne: slug },
-      $or: [
-        { tags: { $in: current.tags || [] } },
-        { title: { $regex: current.title.split(" ")[0], $options: "i" } }
-      ]
-    })
-    .limit(6);
-
-    res.json(related);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
-}); 
 
 module.exports = router;
