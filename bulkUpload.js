@@ -41,25 +41,21 @@ const PngImage = require("./models/PngImage");
       const name = path.basename(file, ".png");
       const seo = generateSEOFromFilename(name);
 
-      // 🔑 SEO-based filename (LIKE YOUR IMAGE SITE)
-      let baseName = `${seo.slug}-png`;
-
       // Ensure uniqueness (important)
       let counter = 1;
       while (await PngImage.findOne({ slug: baseName })) {
         baseName = `${seo.slug}-png-${counter}`;
         counter++;
       }
-      const variations = [
-        seo.slug,
-        `${seo.slug}-transparent`,
-        `${seo.slug}-cutout`,
-        `${seo.slug}-hd`
-      ];
+      // 🔥 CLEAN BASE NAME (NO RANDOMNESS)
+      let baseName = seo.slug;
 
-      const randomSlug = variations[Math.floor(Math.random() * variations.length)];
-
-      let baseName = `${randomSlug}-png`;
+      // ensure unique
+      let counter = 1;
+      while (await PngImage.findOne({ slug: baseName })) {
+        baseName = `${seo.slug}-${counter}`;
+        counter++;
+      }
 
       // Image processing
       const { preview, thumb, width, height } = await processPNG(buffer);
@@ -86,6 +82,7 @@ const PngImage = require("./models/PngImage");
       // Save to MongoDB
       await PngImage.create({
         ...seo,
+        slug: baseName, // 🔥 IMPORTANT
         originalUrl,
         previewUrl,
         thumbUrl,

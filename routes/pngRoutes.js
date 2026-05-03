@@ -100,7 +100,7 @@ router.get("/search", async (req, res) => {
     let results = await PngImage.find({
       $or: [
         { title: { $regex: query, $options: "i" } }, // ✅ improved
-        { tags: { $regex: query, $options: "i" } }
+        { title: { $regex: `\\b${query}\\b`, $options: "i" } }
       ]
     }).limit(50);
 
