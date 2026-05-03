@@ -9,51 +9,8 @@ const PngImage = require("./models/PngImage");
 
 const app = express();
 
-/* Root */
-app.get("/", async (req, res) => {
-  // 🔥 Get latest images
-  const latest = await PngImage.find()
-    .sort({ createdAt: -1 })
-    .limit(60);
-
-  // 🔥 Get popular images
-  const popular = await PngImage.find()
-    .sort({ downloads: -1 })
-    .limit(60);
-
-  // 🔥 Mix + shuffle FIRST
-  const pngs = [...latest, ...popular].sort(() => 0.5 - Math.random());
-
-  let html = fs.readFileSync(
-    path.join(__dirname, "public", "index.html"),
-    "utf-8"
-  );
-
-  let gridHTML = "";
-
-  pngs.forEach(png => {
-
-    const thumb = png.thumbUrl?.startsWith("http")
-      ? png.thumbUrl
-      : `https://cdn.pngfam.com${png.thumbUrl?.startsWith("/") ? "" : "/"}${png.thumbUrl}`;
-
-    gridHTML += `
-      <a href="/image/${png.slug}" class="card-link">
-        <div class="card png-bg">
-          <div class="card-image">
-            <img src="${thumb}" alt="${png.title}" loading="eager">
-          </div>
-          <div class="card-title">${png.title}</div>
-        </div>
-      </a>
-    `;
-  });
-  html = html.replace(
-    '<div class="masonry" id="pngGrid"></div>',
-    `<div class="masonry">${gridHTML}</div>`
-  );
-  
-  res.send(html);
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 /* CORS */
