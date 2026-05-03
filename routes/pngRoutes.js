@@ -110,4 +110,33 @@ router.get("/:slug/download", async (req, res) => {
   }
 });
 
+// 🔥 RELATED PNG IMAGES API
+router.get("/related/:slug", async (req, res) => {
+  try {
+    const slug = req.params.slug;
+
+    const current = await PngImage.findOne({ slug });
+
+    if (!current) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+
+    // Find similar images using tags OR title
+    const related = await PngImage.find({
+      slug: { $ne: slug },
+      $or: [
+        { tags: { $in: current.tags || [] } },
+        { title: { $regex: current.title.split(" ")[0], $options: "i" } }
+      ]
+    })
+    .limit(6);
+
+    res.json(related);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+}); 
+
 module.exports = router;

@@ -11,7 +11,7 @@ const app = express();
 
 /* Root */
 app.get("/", async (req, res) => {
-  const pngs = await PngImage.find().limit(50);
+  const pngs = await PngImage.find().sort({ createdAt: -1 }).limit(120);
 
   let html = fs.readFileSync(
     path.join(__dirname, "public", "index.html"),
@@ -125,15 +125,56 @@ app.get("/image/:slug", async (req, res) => {
     `<h1>${png.title} PNG Transparent Background</h1>`
   );
 
+  const generateDescription = (title) => {
+    return `
+    The ${title} PNG image features a clean transparent background, making it ideal for modern design projects and digital use. 
+    This high-resolution PNG cutout showcases clear details and smooth edges, allowing it to blend perfectly into creative compositions. 
+    Designers can use this ${title} PNG for websites, advertisements, presentations, and social media content without any background limitations. 
+    It is especially useful for graphic design, UI elements, posters, and marketing visuals where high-quality transparent images are required. 
+    Download this ${title} transparent PNG and enhance your creative workflow with a ready-to-use professional asset.
+    `;
+  };
+
   html = html.replace(
     /<p id="seoText">.*?<\/p>/,
-    `<p id="seoText">
-    Download ${png.title} PNG with transparent background in HD resolution.
-    Perfect for graphic design, websites, ads, and creative projects.
-    </p>`
+    `<p id="seoText">${generateDescription(png.title)}</p>`
   );
 
     res.send(html);
+});
+
+// 🔥 CATEGORY PAGE ROUTE
+app.get("/category/:name", async (req, res) => {
+  const category = req.params.name.replace(/-/g, " ");
+
+  const pngs = await PngImage.find({
+    title: { $regex: category, $options: "i" }
+  }).limit(100);
+
+  let html = fs.readFileSync(
+    path.join(__dirname, "public", "category.html"),
+    "utf-8"
+  );
+
+  let gridHTML = "";
+
+  pngs.forEach(png => {
+    gridHTML += `
+      <a href="/image/${png.slug}" class="card-link">
+        <div class="card png-bg">
+          <div class="card-image">
+            <img src="${png.thumbUrl}" alt="${png.title}" loading="lazy">
+          </div>
+          <div class="card-title">${png.title}</div>
+        </div>
+      </a>
+    `;
+  });
+
+  html = html.replace("{{CATEGORY_TITLE}}", category.toUpperCase());
+  html = html.replace("{{GRID}}", gridHTML);
+
+  res.send(html);
 });
 
 /* Static frontend */
