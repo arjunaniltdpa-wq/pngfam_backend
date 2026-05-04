@@ -98,7 +98,6 @@ const PngImage = require("./models/PngImage");
       // 🔥 CLEAN TITLE FROM ORIGINAL NAME (NO WORD LOSS)
       const cleanTitle = originalName
         .replace(/[-_]+/g, " ")
-        .replace(/\bpngfam\b/gi, "") // remove pngfam only
         .replace(/\s+/g, " ")
         .trim();
 
