@@ -14,7 +14,7 @@ const PngImage = require("./models/PngImage");
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("✅ MongoDB connected (bulk upload)");
 
-    // 2️⃣ image-to-upload folder (root level)
+    // 2️⃣ image-to-upload folder
     const folder = path.join(__dirname, "image-to-upload");
 
     if (!fs.existsSync(folder)) {
@@ -26,25 +26,32 @@ const PngImage = require("./models/PngImage");
       .readdirSync(folder)
       .filter(f => f.toLowerCase().endsWith(".png"));
 
+    console.log(`📦 Total PNG files found: ${files.length}`);
+
     if (files.length === 0) {
       console.log("⚠️ No PNG files found");
       process.exit(0);
     }
 
+    let processed = 0;
+
     // 3️⃣ Process each PNG
     for (const file of files) {
-      console.log("🖼️ Processing:", file);
+      console.log(`🖼️ Processing (${processed + 1}/${files.length}):`, file);
 
-      const buffer = fs.readFileSync(path.join(folder, file));
+      const filePath = path.join(folder, file);
+      const buffer = fs.readFileSync(filePath);
+
+      // ORIGINAL NAME (KEEP THIS)
+      const originalName = path.basename(file, ".png");
 
       // SEO from filename
-      const name = path.basename(file, ".png");
-      const seo = generateSEOFromFilename(name);
+      const seo = generateSEOFromFilename(originalName);
 
-      // 🔥 CLEAN BASE NAME (NO RANDOMNESS)
+      // 🔥 SEO SLUG (USED FOR URL ONLY)
       let baseName = seo.slug;
 
-      // ensure unique
+      // ensure unique slug
       let counter = 1;
       while (await PngImage.findOne({ slug: baseName })) {
         baseName = `${seo.slug}-${counter}`;
@@ -54,7 +61,7 @@ const PngImage = require("./models/PngImage");
       // Image processing
       const { preview, thumb, width, height } = await processPNG(buffer);
 
-      // Upload to R2 with SEO names
+      // Upload to R2
       const originalUrl = await uploadToR2(
         `originals/${baseName}.png`,
         buffer,
@@ -73,10 +80,11 @@ const PngImage = require("./models/PngImage");
         "image/webp"
       );
 
-      // Save to MongoDB
+      // Save to MongoDB (KEEP ORIGINAL NAME HERE)
       await PngImage.create({
         ...seo,
-        slug: baseName, // 🔥 IMPORTANT
+        slug: baseName,
+        originalName, // ✅ IMPORTANT (your requirement)
         originalUrl,
         previewUrl,
         thumbUrl,
@@ -84,12 +92,16 @@ const PngImage = require("./models/PngImage");
         height
       });
 
-      console.log("✅ Uploaded:", baseName);
+      // ✅ DELETE FILE AFTER SUCCESS
+      fs.unlinkSync(filePath);
+
+      processed++;
+      console.log(`✅ Uploaded (${processed}/${files.length}): ${baseName}`);
     }
 
     console.log("🎉 BULK UPLOAD COMPLETED");
 
-    // ✅ ping before exit (your previous version never reached this)
+    // Google ping
     const axios = require("axios");
 
     async function pingGoogle() {
