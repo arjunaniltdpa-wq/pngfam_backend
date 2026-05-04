@@ -49,7 +49,22 @@ const PngImage = require("./models/PngImage");
       const seo = generateSEOFromFilename(originalName);
 
       // 🔥 SEO SLUG (USED FOR URL ONLY)
-      let baseName = seo.slug;
+      let baseName = originalName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")   // clean
+        .replace(/-+/g, "-")           // remove duplicate dashes
+        .replace(/^-|-$/g, "");        // trim
+
+      // optional: remove junk words like pngfam if needed
+      baseName = baseName.replace(/pngfam/g, "");
+
+      // 🔥 ensure important SEO words exist
+      if (!baseName.includes("transparent")) {
+        baseName += "-transparent";
+      }
+      if (!baseName.includes("png")) {
+        baseName += "-png";
+      }
 
       // ensure unique slug
       let counter = 1;
