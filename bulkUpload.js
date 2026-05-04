@@ -95,11 +95,18 @@ const PngImage = require("./models/PngImage");
         "image/webp"
       );
 
-      // Save to MongoDB (KEEP ORIGINAL NAME HERE)
+      // 🔥 CLEAN TITLE FROM ORIGINAL NAME (NO WORD LOSS)
+      const cleanTitle = originalName
+        .replace(/[-_]+/g, " ")
+        .replace(/\bpngfam\b/gi, "") // remove pngfam only
+        .replace(/\s+/g, " ")
+        .trim();
+
       await PngImage.create({
         ...seo,
+        title: cleanTitle, // ✅ OVERRIDE TITLE
         slug: baseName,
-        originalName, // ✅ IMPORTANT (your requirement)
+        originalName,
         originalUrl,
         previewUrl,
         thumbUrl,
