@@ -41,12 +41,6 @@ const PngImage = require("./models/PngImage");
       const name = path.basename(file, ".png");
       const seo = generateSEOFromFilename(name);
 
-      // Ensure uniqueness (important)
-      let counter = 1;
-      while (await PngImage.findOne({ slug: baseName })) {
-        baseName = `${seo.slug}-png-${counter}`;
-        counter++;
-      }
       // 🔥 CLEAN BASE NAME (NO RANDOMNESS)
       let baseName = seo.slug;
 
@@ -94,24 +88,26 @@ const PngImage = require("./models/PngImage");
     }
 
     console.log("🎉 BULK UPLOAD COMPLETED");
+
+    // ✅ ping before exit (your previous version never reached this)
+    const axios = require("axios");
+
+    async function pingGoogle() {
+      try {
+        await axios.get("https://www.google.com/ping?sitemap=https://www.pngfam.com/sitemap.xml");
+        console.log("🚀 Google pinged successfully");
+      } catch (err) {
+        console.error("Ping failed", err.message);
+      }
+    }
+
+    await pingGoogle();
+
     process.exit(0);
 
   } catch (err) {
     console.error("❌ Bulk upload failed:", err);
     process.exit(1);
   }
-
-  const axios = require("axios");
-
-  async function pingGoogle() {
-    try {
-      await axios.get("https://www.google.com/ping?sitemap=https://www.pngfam.com/sitemap.xml");
-      console.log("🚀 Google pinged successfully");
-    } catch (err) {
-      console.error("Ping failed", err.message);
-    }
-  }
-
-  await pingGoogle();
 
 })();
