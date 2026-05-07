@@ -169,14 +169,11 @@ router.get("/related/:slug", async (req, res) => {
 /**
  * GET /api/pngs/:slug
  */
-/**
- * GET /api/pngs/:slug
- */
 router.get("/:slug", async (req, res) => {
 
   try {
 
-    // CLEAN SLUG
+    // REMOVE EXTRA DASHES
     const cleanSlug = req.params.slug
       .trim()
       .replace(/-+$/, "");
@@ -186,8 +183,6 @@ router.get("/:slug", async (req, res) => {
     const png = await PngImage.findOne({
       slug: cleanSlug
     });
-
-    console.log("PNG FOUND:", png ? png.slug : "NOT FOUND");
 
     if (!png) {
       return res.status(404).json({
