@@ -9,9 +9,7 @@ const PngImage = require("./models/PngImage");
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+const homeRoutes = require("./routes/homeRoutes");
 
 /* CORS */
 app.use(cors({ origin: "*" }));
@@ -21,6 +19,8 @@ app.use(express.json());
 /* OG routes */
 const ogRoutes = require("./routes/ogRoutes");
 app.use("/api/og", ogRoutes);
+
+app.use("/", homeRoutes);
 
 /* Connect DB */
 connectDB();
