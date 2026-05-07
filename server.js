@@ -36,12 +36,22 @@ app.get("/image", (req, res) => {
 const fs = require("fs");
 
 app.get("/image/:slug", async (req, res) => {
-  const png = await PngImage.findOne({ slug: req.params.slug });
+
+  // CLEAN SLUG
+  const cleanSlug = req.params.slug
+    .trim()
+    .replace(/-+$/, "");
+
+  console.log("SSR Requested slug:", cleanSlug);
+
+  const png = await PngImage.findOne({
+    slug: cleanSlug
+  });
 
   if (!png) {
     return res.status(404).send("Not found");
   }
-
+  
   // Load your existing HTML file
   let html = fs.readFileSync(
     path.join(__dirname, "public", "image.html"),
@@ -444,7 +454,7 @@ app.get("/sitemap.xml", async (req, res) => {
 </sitemapindex>`;
 
   res.send(xml);
-});
+}); 
 
 /* =========================
    START SERVER (RENDER FIX)
