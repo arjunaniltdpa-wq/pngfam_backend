@@ -170,48 +170,19 @@ router.get("/related/:slug", async (req, res) => {
  * GET /api/pngs/:slug
  */
 router.get("/:slug", async (req, res) => {
-
   try {
-
-    // REMOVE EXTRA DASHES
-    const cleanSlug = req.params.slug
-      .trim()
-      .replace(/-+$/, "");
-
-    console.log("Requested slug:", cleanSlug);
-
-    const png = await PngImage.findOne({
-      slug: cleanSlug
-    });
-
-    if (!png) {
-      return res.status(404).json({
-        error: "Not found"
-      });
-    }
+    const png = await PngImage.findOne({ slug: req.params.slug });
+    if (!png) return res.status(404).json({ error: "Not found" });
 
     res.json({
-
       ...png.toObject(),
-
       originalUrl: fixUrl(png.originalUrl),
-
       previewUrl: fixUrl(png.previewUrl),
-
       thumbUrl: fixUrl(png.thumbUrl),
-
     });
-
   } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json({
-      error: "Server error"
-    });
-
+    res.status(500).json({ error: "Server error" });
   }
-
 });
 
 module.exports = router;

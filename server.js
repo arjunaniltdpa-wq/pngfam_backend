@@ -20,7 +20,7 @@ app.use(express.json());
 const ogRoutes = require("./routes/ogRoutes");
 app.use("/api/og", ogRoutes);
 
-app.use("/", homeRoutes); 
+app.use("/", homeRoutes);
 
 /* Connect DB */
 connectDB();
@@ -36,22 +36,12 @@ app.get("/image", (req, res) => {
 const fs = require("fs");
 
 app.get("/image/:slug", async (req, res) => {
-
-  // CLEAN SLUG
-  const cleanSlug = req.params.slug
-    .trim()
-    .replace(/-+$/, "");
-
-  console.log("SSR Requested slug:", cleanSlug);
-
-  const png = await PngImage.findOne({
-    slug: cleanSlug
-  });
+  const png = await PngImage.findOne({ slug: req.params.slug });
 
   if (!png) {
     return res.status(404).send("Not found");
   }
-  
+
   // Load your existing HTML file
   let html = fs.readFileSync(
     path.join(__dirname, "public", "image.html"),
@@ -75,47 +65,15 @@ app.get("/image/:slug", async (req, res) => {
     '<meta property="og:title" content="Free Transparent PNG Image Download">',
     `<meta property="og:title" content="${png.title} PNG Transparent Background">`
   );
-  const ogImage = png.previewUrl.startsWith("http")
-    ? png.previewUrl
-    : `https://cdn.pngfam.com${png.previewUrl}`;
 
   html = html.replace(
     '<meta property="og:image" content="">',
-    `<meta property="og:image" content="${ogImage}">`
+    `<meta property="og:image" content="${png.previewUrl || png.originalUrl}">`
   );
 
   html = html.replace(
     '<meta property="og:url" content="">',
     `<meta property="og:url" content="https://www.pngfam.com/image/${png.slug}">`
-  );
-
-  html = html.replace(
-    '<meta property="og:image:height" content="1200">',
-    `
-  <meta property="og:image:height" content="1200">
-  <meta property="og:image:type" content="image/webp">
-  <meta name="twitter:image" content="${ogImage}">
-  <meta name="twitter:image:alt" content="${png.title} transparent PNG">
-  `
-  );
-
-  html = html.replace(
-    '<meta property="og:type" content="website">',
-    '<meta property="og:type" content="article">'
-  );
-  html = html.replace(
-    '<meta property="og:url" content="">',
-    `
-  <meta property="og:url" content="https://www.pngfam.com/image/${png.slug}">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${png.title} PNG Transparent Background">
-  <meta name="twitter:description" content="Download ${png.title} PNG with transparent background in HD quality.">
-  `
-  );
-
-  html = html.replace(
-    '<link rel="preload" as="image" href="/images/placeholder.png">',
-    `<link rel="preload" as="image" href="${ogImage}">`
   );
 
   html = html.replace(
@@ -127,7 +85,7 @@ app.get("/image/:slug", async (req, res) => {
   html = html.replace(
     /<img id="mainPreview"[^>]*>/,
     `<img id="mainPreview"
-      src="${ogImage}"
+      src="${png.previewUrl || png.originalUrl}"
       alt="${png.title} PNG transparent background"
       width="1200"
       height="1200"
@@ -137,46 +95,6 @@ app.get("/image/:slug", async (req, res) => {
   html = html.replace(
     "<h1>Free Transparent PNG Image</h1>",
     `<h1>${png.title} PNG Transparent Background</h1>`
-  );
-  html = html.replace(
-    '<span id="breadcrumbTitle">Image</span>',
-    `<span id="breadcrumbTitle">${png.title}</span>`
-  );
-  html = html.replace(
-    '<span>Download PNG</span>',
-    `<span>Download PNG (${png.width} × ${png.height})</span>`
-  );
-
-  html = html.replace(
-    '<source id="webpSource" type="image/webp">',
-    `<source id="webpSource" srcset="${ogImage}" type="image/webp">`
-  );
-
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "ImageObject",
-    "name": png.title,
-    "description": `Download ${png.title} PNG with transparent background`,
-    "contentUrl": ogImage,
-    "thumbnailUrl": ogImage,
-    "width": png.width,
-    "height": png.height,
-    "encodingFormat": "image/webp",
-    "url": `https://www.pngfam.com/image/${png.slug}`,
-    "author": {
-      "@type": "Organization",
-      "name": "PNGFam"
-    }
-  };
-
-  html = html.replace(
-    "</head>",
-    `
-  <script type="application/ld+json">
-  ${JSON.stringify(schema)}
-  </script>
-  </head>
-  `
   );
 
   const generateDescription = (title) => {
@@ -194,19 +112,7 @@ app.get("/image/:slug", async (req, res) => {
     `<p id="seoText">${generateDescription(png.title)}</p>`
   );
 
-  let tagsHTML = "";
-
-  (png.tags || []).forEach(tag => {
-    tagsHTML += `<span>${tag}</span>`;
-  });
-
-  html = html.replace(
-    '<div class="tags"></div>',
-    `<div class="tags">${tagsHTML}</div>`
-  );
-
     res.send(html);
-    
 });
 
 /* Static frontend */
@@ -454,7 +360,7 @@ app.get("/sitemap.xml", async (req, res) => {
 </sitemapindex>`;
 
   res.send(xml);
-}); 
+});
 
 /* =========================
    START SERVER (RENDER FIX)
