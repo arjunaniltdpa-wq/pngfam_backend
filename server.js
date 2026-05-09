@@ -90,9 +90,10 @@ app.get("/image/:slug", async (req, res) => {
       width="1200"
       height="1200"
       loading="eager"
-      decoding="async">`
+      decoding="async"
+      style="width:100%;height:auto;display:block;">`
   );
-
+  
   html = html.replace(
     "<h1>Free Transparent PNG Image</h1>",
     `<h1>${png.title} PNG Transparent Background</h1>`
@@ -105,7 +106,7 @@ app.get("/image/:slug", async (req, res) => {
         type="image/webp"
         srcset="${png.previewUrl || png.originalUrl}">`
   );  
-  
+
   const generateDescription = (title) => {
     return `
     The ${title} PNG image features a clean transparent background, making it ideal for modern design projects and digital use. 
