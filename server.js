@@ -86,10 +86,11 @@ app.get("/image/:slug", async (req, res) => {
     /<img id="mainPreview"[^>]*>/,
     `<img id="mainPreview"
       src="${png.previewUrl || png.originalUrl}"
-      alt="${png.title} PNG transparent background"
+      alt="${png.title} transparent PNG high quality free download"
       width="1200"
       height="1200"
-      loading="eager">`
+      loading="eager"
+      decoding="async">`
   );
 
   html = html.replace(
@@ -97,6 +98,14 @@ app.get("/image/:slug", async (req, res) => {
     `<h1>${png.title} PNG Transparent Background</h1>`
   );
 
+  html = html.replace(
+    '<source id="webpSource" type="image/webp">',
+    `<source
+        id="webpSource"
+        type="image/webp"
+        srcset="${png.previewUrl || png.originalUrl}">`
+  );  
+  
   const generateDescription = (title) => {
     return `
     The ${title} PNG image features a clean transparent background, making it ideal for modern design projects and digital use. 
@@ -110,6 +119,39 @@ app.get("/image/:slug", async (req, res) => {
   html = html.replace(
     /<p id="seoText">.*?<\/p>/,
     `<p id="seoText">${generateDescription(png.title)}</p>`
+  );
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "ImageObject",
+    "representativeOfPage": true,
+    "name": png.title,
+    "description": `Download ${png.title} PNG with transparent background`,
+    "contentUrl": png.previewUrl || png.originalUrl,
+    "thumbnailUrl": png.thumbUrl || png.previewUrl,
+    "width": png.width || 1200,
+    "height": png.height || 1200,
+    "encodingFormat": "image/png",
+    "license": "https://www.pngfam.com/license",
+    "acquireLicensePage": "https://www.pngfam.com/license",
+    "url": `https://www.pngfam.com/image/${png.slug}`,
+    "author": {
+      "@type": "Organization",
+      "name": "PNGfam"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "PNGfam"
+    }
+  };
+
+  html = html.replace(
+    "</head>",
+    `
+  <script type="application/ld+json">
+  ${JSON.stringify(schema)}
+  </script>
+  </head>`
   );
 
     res.send(html);
