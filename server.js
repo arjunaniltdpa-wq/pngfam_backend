@@ -35,9 +35,19 @@ app.get("/image", (req, res) => {
 
 const fs = require("fs");
 
+const getVariant = (text, total) => {
+  let hash = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return Math.abs(hash % total);
+};
+
 app.get("/image/:slug", async (req, res) => {
   const png = await PngImage.findOne({ slug: req.params.slug });
-
+  
   if (!png) {
     return res.status(404).send("Not found");
   }
@@ -58,7 +68,15 @@ app.get("/image/:slug", async (req, res) => {
   // Inject SEO (IMPORTANT)
   html = html.replace(
     "<title>Free Transparent PNG Images Download HD</title>",
-    `<title>${png.title} PNG Transparent Background Free Download</title>`
+    `<title>${
+      [
+        `${png.title} PNG Transparent Background Free Download`,
+        `${png.title} Transparent PNG Image HD`,
+        `${png.title} PNG Free Download`,
+        `${png.title} HD PNG Transparent Image`,
+        `${png.title} Transparent Background PNG`
+      ][getVariant(png.slug, 5)]
+    }</title>`
   );
 
   html = html.replace(
@@ -78,7 +96,15 @@ app.get("/image/:slug", async (req, res) => {
 
   html = html.replace(
     'content="Download high-quality transparent PNG images in HD resolution. Free PNG images for graphic design, websites, and creative projects."',
-    `content="Download ${png.title} PNG with transparent background in HD quality."`
+    `content="${
+    [
+    `Download ${png.title} PNG with transparent background in HD quality.`,
+    `Free ${png.title} transparent PNG image for graphic design and websites.`,
+    `${png.title} PNG free download with transparent background.`,
+    `High-quality ${png.title} transparent PNG image in HD resolution.`,
+    `${png.title} PNG transparent background for creative projects and digital design.`
+    ][getVariant(png.slug, 5)]
+    }"`
   );
 
   // Inject IMAGE + TITLE directly (CRITICAL)
@@ -86,7 +112,15 @@ app.get("/image/:slug", async (req, res) => {
     /<img id="mainPreview"[^>]*>/,
     `<img id="mainPreview"
       src="${png.previewUrl || png.originalUrl}"
-      alt="${png.title} transparent PNG high quality free download"
+      alt="${
+      [
+      `${png.title} transparent PNG`,
+      `${png.title} PNG free download`,
+      `${png.title} high quality transparent image`,
+      `${png.title} PNG background transparent`,
+      `${png.title} cutout PNG image`
+      ][getVariant(png.slug, 5)]
+      }"
       width="1200"
       height="1200"
       loading="eager"
@@ -96,22 +130,55 @@ app.get("/image/:slug", async (req, res) => {
 
   html = html.replace(
     "<h1>Free Transparent PNG Image</h1>",
-    `<h1>${png.title} PNG Transparent Background</h1>`
+    `<h1>${
+      [
+        `${png.title} PNG Transparent Background`,
+        `${png.title} Transparent PNG Image`,
+        `${png.title} PNG Free Download`,
+        `${png.title} HD Transparent PNG`,
+        `${png.title} PNG Background Transparent`
+      ][getVariant(png.slug, 5)]
+    }</h1>`
   );
 
   const generateDescription = (title) => {
-    return `
-    The ${title} PNG image features a clean transparent background, making it ideal for modern design projects and digital use. 
-    This high-resolution PNG cutout showcases clear details and smooth edges, allowing it to blend perfectly into creative compositions. 
-    Designers can use this ${title} PNG for websites, advertisements, presentations, and social media content without any background limitations. 
-    It is especially useful for graphic design, UI elements, posters, and marketing visuals where high-quality transparent images are required. 
-    Download this ${title} transparent PNG and enhance your creative workflow with a ready-to-use professional asset.
-    `;
+
+    const templates = [
+
+  `Download high-resolution ${title} PNG with transparent background for graphic design, websites, branding, presentations, and creative digital projects. This transparent PNG cutout features clean edges and professional quality suitable for modern design workflows.`,
+
+  `${title} transparent PNG image in HD quality with no background. Perfect for designers, content creators, social media graphics, YouTube thumbnails, UI projects, advertising materials, and commercial creative work.`,
+
+  `Free ${title} PNG transparent background image optimized for websites, posters, digital marketing, presentations, and branding projects. This high-quality PNG graphic includes sharp details and clean transparent cutout edges.`,
+
+  `Professional ${title} PNG image with transparent background available in high resolution. Suitable for graphic design, product mockups, online stores, mobile apps, blog graphics, and commercial digital projects.`,
+
+  `${title} PNG transparent image for creative and commercial use. Download HD transparent PNG graphics for websites, banners, presentations, social media posts, branding materials, and modern visual content creation.`
+
+    ];
+
+    return templates[getVariant(png.slug, 5)];
   };
 
   html = html.replace(
     /<p id="seoText">.*?<\/p>/,
     `<p id="seoText">${generateDescription(png.title)}</p>`
+  );
+
+  const keywordLinks = `
+  <div class="seo-links">
+    <a href="/search?q=${encodeURIComponent(png.title)}">More ${png.title} PNG</a>
+    <a href="/search?q=transparent png">Transparent PNG Images</a>
+    <a href="/search?q=hd png">HD PNG Images</a>
+    <a href="/search?q=free png">Free PNG Download</a>
+  </div>
+  `;
+
+  html = html.replace(
+    "</div>\n\n      <a class=\"download-btn\"",
+    `${keywordLinks}
+    
+        <a class="download-btn"`
   );
 
   const schema = {
@@ -138,12 +205,42 @@ app.get("/image/:slug", async (req, res) => {
     }
   };
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.pngfam.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "PNG Images",
+        "item": "https://www.pngfam.com/search?q=png"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": png.title,
+        "item": `https://www.pngfam.com/image/${png.slug}`
+      }
+    ]
+  };
+
   html = html.replace(
     "</head>",
     `
   <script type="application/ld+json">
   ${JSON.stringify(schema)}
   </script>
+
+  <script type="application/ld+json">
+  ${JSON.stringify(breadcrumbSchema)}
+  </script>
+
   </head>`
   );
 
