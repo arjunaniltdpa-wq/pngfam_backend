@@ -93,19 +93,11 @@ app.get("/image/:slug", async (req, res) => {
       decoding="async"
       style="width:100%;height:auto;display:block;">`
   );
-  
+
   html = html.replace(
     "<h1>Free Transparent PNG Image</h1>",
     `<h1>${png.title} PNG Transparent Background</h1>`
   );
-
-  html = html.replace(
-    '<source id="webpSource" type="image/webp">',
-    `<source
-        id="webpSource"
-        type="image/webp"
-        srcset="${png.previewUrl || png.originalUrl}">`
-  );  
 
   const generateDescription = (title) => {
     return `
