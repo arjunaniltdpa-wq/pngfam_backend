@@ -6,7 +6,11 @@ const PngImageSchema = new mongoose.Schema({
   description: String,
   h1: String,
   alt: String,
+
   tags: [String],
+
+  keywords: [String],
+  category: String,
 
   originalUrl: String,
   previewUrl: String,
@@ -15,8 +19,28 @@ const PngImageSchema = new mongoose.Schema({
   width: Number,
   height: Number,
 
-  downloads: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
+  views: {
+    type: Number,
+    default: 0
+  },
+
+  downloads: {
+    type: Number,
+    default: 0
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-module.exports = mongoose.model("PngImage", PngImageSchema);
+PngImageSchema.index({
+  title: "text",
+  keywords: "text",
+  tags: "text",
+  category: "text"
+});
+
+module.exports =
+  mongoose.model("PngImage", PngImageSchema);
