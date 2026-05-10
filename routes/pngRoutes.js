@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const PngImage = require("../models/PngImage");
+const Fuse = require("fuse.js");
 const CDN = "https://cdn.pngfam.com";
 
 /**
@@ -89,35 +90,186 @@ router.get("/:slug/download", async (req, res) => {
 /**
  * 🔥 SEARCH API
  */
+/**
+ * 🔥 SMART SEARCH API
+ */
 router.get("/search", async (req, res) => {
   try {
-    const query = req.query.q;
 
-    if (!query) {
-      return res.json([]);
+    const query =
+      req.query.q?.trim().toLowerCase();
+
+    /* =========================
+      NORMALIZE WORDS
+    ========================= */
+
+    const words =
+      query.split(" ");
+
+    const normalizedWords =
+      words.map(word => {
+
+        // cars -> car
+        if (word.endsWith("s")) {
+          return word.slice(0, -1);
+        }
+
+        return word;
+      });
+
+    const normalizedQuery =
+      normalizedWords.join(" ");
+
+    /* =========================
+       SMART TEXT SEARCH
+    ========================= */
+
+    let results = await PngImage.find(
+
+      {
+        $text: {
+          $search: normalizedQuery
+        }
+      },
+
+      {
+        score: {
+          $meta: "textScore"
+        }
+      }
+
+      );
+
+    /* =========================
+       EXACT MATCH BOOST
+    ========================= */
+
+    const cleanQuery =
+      query.toLowerCase();
+
+    results = results.sort((a, b) => {
+
+      const aExact =
+        a.title?.toLowerCase() === cleanQuery
+          ? 100
+          : 0;
+
+      const bExact =
+        b.title?.toLowerCase() === cleanQuery
+          ? 100
+          : 0;
+
+      return (
+        ((b.score || 0) + bExact) -
+        ((a.score || 0) + aExact)
+      );
+    });
+
+    /* =========================
+      SORT TYPE
+    ========================= */
+
+    const sortType =
+      req.query.sort || "relevant";
+
+    /* DEFAULT RELEVANT */
+
+    if (sortType === "relevant") {
+
+      results = results.sort((a, b) => {
+
+        return (
+          (b.score || 0) -
+          (a.score || 0)
+        );
+      });
     }
 
-    let results = await PngImage.find({
-      $or: [
-        { title: { $regex: query, $options: "i" } }, // ✅ improved
-        { title: { $regex: `\\b${query}\\b`, $options: "i" } }
-      ]
-    }).limit(50);
+    /* NEWEST */
+
+    else if (sortType === "newest") {
+
+      results = results.sort((a, b) => {
+
+        return (
+          new Date(b.createdAt) -
+          new Date(a.createdAt)
+        );
+      });
+    }
+
+    /* POPULAR */
+
+    else if (sortType === "popular") {
+
+      results = results.sort((a, b) => {
+
+        return (
+          (b.downloads || 0) -
+          (a.downloads || 0)
+        );
+      });
+    }
+    /* LIMIT */
+
+    results =
+      results.slice(0, 50);
+
+    /* =========================
+      FUZZY SEARCH FALLBACK
+    ========================= */
 
     if (results.length === 0) {
-      results = await PngImage.find().limit(20);
+
+      const allImages =
+        await PngImage.find({})
+        .limit(1000);
+
+      const fuse =
+        new Fuse(allImages, {
+
+          keys: [
+            "title",
+            "tags",
+            "keywords",
+            "category"
+          ],
+
+          threshold: 0.35,
+
+          includeScore: true
+        });
+
+      const fuzzyResults =
+        fuse.search(normalizedQuery)
+        
+      results =
+        fuzzyResults
+          .slice(0, 30)
+          .map(r => r.item);
     }
 
+    /* =========================
+       FIX CDN URLS
+    ========================= */
+
     const updated = results.map(png => ({
+
       ...png.toObject(),
+
       thumbUrl: fixUrl(png.thumbUrl)
+
     }));
 
     res.json(updated);
 
   } catch (err) {
+
     console.error(err);
-    res.status(500).json({ error: "Search failed" });
+
+    res.status(500).json({
+      error: "Search failed"
+    });
   }
 });
 
