@@ -69,13 +69,16 @@ app.get("/image/:slug", async (req, res) => {
   html = html.replace(
     "<title>Free Transparent PNG Images Download HD</title>",
     `<title>${
-      [
-        `${png.title} PNG Transparent Background Free Download`,
-        `${png.title} Transparent PNG Image HD`,
-        `${png.title} PNG Free Download`,
-        `${png.title} HD PNG Transparent Image`,
-        `${png.title} Transparent Background PNG`
-      ][getVariant(png.slug, 5)]
+        [
+          `${png.title} Transparent PNG Background Image`,
+          `Free ${png.title} PNG HD Download`,
+          `${png.title} Cutout PNG for Graphic Design`,
+          `${png.title} Isolated Transparent PNG`,
+          `${png.title} High Resolution PNG Asset`,
+          `${png.title} Transparent Background Graphic`,
+          `${png.title} PNG Clipart for Creative Projects`,
+          `${png.title} Premium Transparent PNG Image`
+        ][getVariant(png.slug, 5)]
     }</title>`
   );
 
@@ -85,8 +88,33 @@ app.get("/image/:slug", async (req, res) => {
   );
 
   html = html.replace(
-    '<meta property="og:image" content="">',
+    /<meta property="og:image" content=".*?">/,
     `<meta property="og:image" content="${png.previewUrl || png.originalUrl}">`
+  );
+
+  html = html.replace(
+    /<meta property="og:image:secure_url" content=".*?">/,
+    `<meta property="og:image:secure_url" content="${png.previewUrl || png.originalUrl}">`
+  );
+
+  html = html.replace(
+    /<meta name="twitter:image" content=".*?">/,
+    `<meta name="twitter:image" content="${png.previewUrl || png.originalUrl}">`
+  );
+
+  html = html.replace(
+    /<meta property="og:url" content=".*?">/,
+    `<meta property="og:url" content="https://www.pngfam.com/image/${png.slug}">`
+  );
+
+  html = html.replace(
+    /<meta name="twitter:title" content=".*?">/,
+    `<meta name="twitter:title" content="${png.title} PNG Transparent Background">`
+  );
+
+  html = html.replace(
+    /<meta name="twitter:description" content=".*?">/,
+    `<meta name="twitter:description" content="Download ${png.title} PNG with transparent background in HD quality.">`
   );
 
   html = html.replace(
@@ -141,23 +169,52 @@ app.get("/image/:slug", async (req, res) => {
     }</h1>`
   );
 
-  const generateDescription = (title) => {
+  const tagsHTML = (png.tags || [])
+    .map(tag =>
+      `<a href="/search?q=${encodeURIComponent(tag)}">${tag}</a>`
+    )
+    .join("");
 
-    const templates = [
+  html = html.replace(
+    '<div class="tags"></div>',
+    `<div class="tags">${tagsHTML}</div>`
+  );
 
-  `Download high-resolution ${title} PNG with transparent background for graphic design, websites, branding, presentations, and creative digital projects. This transparent PNG cutout features clean edges and professional quality suitable for modern design workflows.`,
+  const generateDescription = (title, tags = []) => {
 
-  `${title} transparent PNG image in HD quality with no background. Perfect for designers, content creators, social media graphics, YouTube thumbnails, UI projects, advertising materials, and commercial creative work.`,
+    const keywords =
+      tags.slice(0, 5).join(", ");
 
-  `Free ${title} PNG transparent background image optimized for websites, posters, digital marketing, presentations, and branding projects. This high-quality PNG graphic includes sharp details and clean transparent cutout edges.`,
-
-  `Professional ${title} PNG image with transparent background available in high resolution. Suitable for graphic design, product mockups, online stores, mobile apps, blog graphics, and commercial digital projects.`,
-
-  `${title} PNG transparent image for creative and commercial use. Download HD transparent PNG graphics for websites, banners, presentations, social media posts, branding materials, and modern visual content creation.`
-
+    const intros = [
+      `Download high-quality ${title} PNG with transparent background.`,
+      `Explore premium ${title} transparent PNG graphics.`,
+      `Free HD ${title} PNG image for creative design projects.`,
+      `${title} transparent PNG isolated on clean background.`,
+      `Professional ${title} PNG asset for websites and branding.`
     ];
 
-    return templates[getVariant(png.slug, 5)];
+    const usage = [
+      `Suitable for graphic design, websites, advertising, UI design, social media creatives, thumbnails and branding.`,
+      `Perfect for posters, YouTube thumbnails, presentations, apps, mockups and digital marketing.`,
+      `Optimized for designers, content creators, developers and commercial creative workflows.`,
+      `Ideal for web projects, visual design systems, product mockups and digital artwork.`,
+      `Useful for commercial graphics, online stores, banners, mobile apps and presentations.`
+    ];
+
+    const quality = [
+      `Features clean transparent edges and high-resolution quality.`,
+      `Includes sharp details with professionally optimized transparent cutout.`,
+      `Designed with ultra HD clarity and smooth transparent borders.`,
+      `Provides crisp transparent rendering suitable for modern digital media.`,
+      `High-quality transparent PNG with professional visual optimization.`
+    ];
+
+    return `
+      ${intros[getVariant(title, intros.length)]}
+      ${usage[getVariant(title + "a", usage.length)]}
+      ${quality[getVariant(title + "b", quality.length)]}
+      Keywords: ${keywords}.
+    `;
   };
 
   html = html.replace(
@@ -165,13 +222,29 @@ app.get("/image/:slug", async (req, res) => {
     `<p id="seoText">${generateDescription(png.title)}</p>`
   );
 
+  const dynamicLinks = (png.tags || [])
+    .slice(0, 6)
+    .map(tag => {
+
+      return `
+        <a href="/search?q=${encodeURIComponent(tag)}">
+          ${tag} PNG
+        </a>
+      `;
+
+    })
+    .join("");
+
   const keywordLinks = `
-  <div class="seo-links">
-    <a href="/search?q=${encodeURIComponent(png.title)}">More ${png.title} PNG</a>
-    <a href="/search?q=transparent png">Transparent PNG Images</a>
-    <a href="/search?q=hd png">HD PNG Images</a>
-    <a href="/search?q=free png">Free PNG Download</a>
-  </div>
+    <div class="seo-links">
+
+      <a href="/search?q=${encodeURIComponent(png.title)}">
+        More ${png.title} PNG
+      </a>
+
+      ${dynamicLinks}
+
+    </div>
   `;
 
   html = html.replace(
@@ -183,25 +256,79 @@ app.get("/image/:slug", async (req, res) => {
 
   const schema = {
     "@context": "https://schema.org",
+
     "@type": "ImageObject",
+
     "representativeOfPage": true,
+
     "name": png.title,
-    "description": `Download ${png.title} PNG with transparent background`,
-    "contentUrl": png.previewUrl || png.originalUrl,
-    "thumbnailUrl": png.thumbUrl || png.previewUrl,
-    "width": png.width || 1200,
-    "height": png.height || 1200,
-    "encodingFormat": "image/png",
-    "license": "https://www.pngfam.com/license",
-    "acquireLicensePage": "https://www.pngfam.com/license",
-    "url": `https://www.pngfam.com/image/${png.slug}`,
+
+    "description":
+      `Download ${png.title} PNG with transparent background in HD quality.`,
+
+    "contentUrl":
+      png.originalUrl || png.previewUrl,
+
+    "thumbnailUrl":
+      png.thumbUrl || png.previewUrl,
+
+    "width":
+      png.width || 1200,
+
+    "height":
+      png.height || 1200,
+
+    "encodingFormat":
+      "image/png",
+
+    "license":
+      "https://www.pngfam.com/license",
+
+    "acquireLicensePage":
+      "https://www.pngfam.com/license",
+
+    "url":
+      `https://www.pngfam.com/image/${png.slug}`,
+
+    "creditText":
+      "PNGfam",
+
+    "copyrightNotice":
+      "PNGfam",
+
+    "keywords":
+      png.tags?.join(", "),
+
+    "genre":
+      "Transparent PNG",
+
+    "inLanguage":
+      "en",
+
+    "isAccessibleForFree":
+      true,
+
     "author": {
       "@type": "Organization",
       "name": "PNGfam"
     },
+
     "creator": {
       "@type": "Organization",
       "name": "PNGfam"
+    },
+
+    "publisher": {
+      "@type": "Organization",
+
+      "name": "PNGfam",
+
+      "logo": {
+        "@type": "ImageObject",
+
+        "url":
+          "https://www.pngfam.com/images/logo.png"
+      }
     }
   };
 

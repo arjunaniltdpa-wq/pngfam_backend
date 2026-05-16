@@ -289,15 +289,23 @@ router.get("/related/:slug", async (req, res) => {
       return res.status(404).json({ error: "Image not found" });
     }
 
-    const keyword = current.title.split(" ").slice(0, 1).join(" ");
+    const words =
+      current.title
+        .split(" ")
+        .filter(w => w.length > 2)
+        .slice(0, 4);
+
+    const regex =
+      words.join("|");
 
     let related = await PngImage.find({
       slug: { $ne: slug },
-      $or: [
-        { title: { $regex: keyword, $options: "i" } },
-        { tags: { $in: current.tags || [] } }
-      ]
-    }).limit(20);
+      title: {
+        $regex: regex,
+        $options: "i"
+      }
+    })
+    .limit(20);
 
     // 🔥 fallback fill
     if (related.length < 20) {
