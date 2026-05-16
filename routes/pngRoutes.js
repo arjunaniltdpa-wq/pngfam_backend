@@ -25,6 +25,7 @@ router.get("/", async (req, res) => {
   try {
     const search = req.query.search?.trim();
     const limit = parseInt(req.query.limit) || 50; // ✅ added
+    const skip = parseInt(req.query.skip) || 0;
 
     let query = {};
     if (search) {
@@ -37,8 +38,9 @@ router.get("/", async (req, res) => {
     }
 
     const pngs = await PngImage.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit) // ✅ dynamic
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit)
       .select("slug title thumbUrl width height");
 
     const updated = pngs.map(png => ({
@@ -261,8 +263,9 @@ router.get("/search", async (req, res) => {
 
     }));
 
+    res.set("Cache-Control", "no-store");
     res.json(updated);
-
+    
   } catch (err) {
 
     console.error(err);
