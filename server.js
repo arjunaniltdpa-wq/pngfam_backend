@@ -78,7 +78,7 @@ app.get("/image/:slug", async (req, res) => {
           `${png.title} Transparent Background Graphic`,
           `${png.title} PNG Clipart for Creative Projects`,
           `${png.title} Premium Transparent PNG Image`
-        ][getVariant(png.slug, titles.length)]
+        ][getVariant(png.slug, 8)]
     }</title>`
   );
 
