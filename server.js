@@ -78,7 +78,7 @@ app.get("/image/:slug", async (req, res) => {
           `${png.title} Transparent Background Graphic`,
           `${png.title} PNG Clipart for Creative Projects`,
           `${png.title} Premium Transparent PNG Image`
-        ][getVariant(png.slug, 5)]
+        ][getVariant(png.slug, titles.length)]
     }</title>`
   );
 
@@ -169,57 +169,237 @@ app.get("/image/:slug", async (req, res) => {
     }</h1>`
   );
 
-  const tagsHTML = (png.tags || [])
-    .map(tag =>
-      `<a href="/search?q=${encodeURIComponent(tag)}">${tag}</a>`
-    )
-    .join("");
+  const generateDescription = (png) => {
 
-  html = html.replace(
-    '<div class="tags"></div>',
-    `<div class="tags">${tagsHTML}</div>`
-  );
-
-  const generateDescription = (title, tags = []) => {
+    const title = png.title;
+    const tags = png.tags || [];
 
     const keywords =
-      tags.slice(0, 5).join(", ");
+      tags.slice(0, 8).join(", ");
 
-    const intros = [
-      `Download high-quality ${title} PNG with transparent background.`,
-      `Explore premium ${title} transparent PNG graphics.`,
-      `Free HD ${title} PNG image for creative design projects.`,
-      `${title} transparent PNG isolated on clean background.`,
-      `Professional ${title} PNG asset for websites and branding.`
+    let category = "design asset";
+    let usage = "graphic design projects";
+
+    const lower =
+      title.toLowerCase();
+      
+    const seoTitles = [
+
+    `${title} Transparent PNG Image`,
+
+    `${title} PNG Free Download`,
+
+    `${title} HD Transparent Background PNG`,
+
+    `${title} Isolated PNG Graphic`,
+
+    `${title} Transparent Background Image`
+
     ];
 
-    const usage = [
-      `Suitable for graphic design, websites, advertising, UI design, social media creatives, thumbnails and branding.`,
-      `Perfect for posters, YouTube thumbnails, presentations, apps, mockups and digital marketing.`,
-      `Optimized for designers, content creators, developers and commercial creative workflows.`,
-      `Ideal for web projects, visual design systems, product mockups and digital artwork.`,
-      `Useful for commercial graphics, online stores, banners, mobile apps and presentations.`
-    ];
+    const introLines = [
 
-    const quality = [
-      `Features clean transparent edges and high-resolution quality.`,
-      `Includes sharp details with professionally optimized transparent cutout.`,
-      `Designed with ultra HD clarity and smooth transparent borders.`,
-      `Provides crisp transparent rendering suitable for modern digital media.`,
-      `High-quality transparent PNG with professional visual optimization.`
+    `Download high-resolution ${title} transparent PNG image with clean transparent background.`,
+
+    `Explore premium ${title} PNG image optimized for creative design projects.`,
+
+    `Free transparent ${title} PNG graphic with sharp details and isolated background.`,
+
+    `${title} PNG transparent background image suitable for modern digital design workflows.`,
+
+    `Professional ${title} transparent PNG asset for branding, websites and creative media.`
+
     ];
+    
+    // CATEGORY DETECTION
+
+    if (
+      lower.includes("shirt") ||
+      lower.includes("hoodie") ||
+      lower.includes("fashion")
+    ) {
+      category = "fashion apparel";
+      usage =
+        "fashion branding, clothing mockups, print-on-demand projects, apparel advertisements and streetwear presentations";
+    }
+
+    else if (
+      lower.includes("car") ||
+      lower.includes("bike")
+    ) {
+      category = "automotive graphic";
+      usage =
+        "automotive branding, racing posters, transport graphics, YouTube thumbnails and vehicle design projects";
+    }
+
+    else if (
+      lower.includes("anime")
+    ) {
+      category = "anime artwork";
+      usage =
+        "anime edits, manga artwork, gaming thumbnails, wallpapers and Japanese themed creative projects";
+    }
+
+    else if (
+      lower.includes("flower") ||
+      lower.includes("rose")
+    ) {
+      category = "floral graphic";
+      usage =
+        "greeting cards, floral branding, wedding invitations, wallpapers and botanical design projects";
+    }
+
+    else if (
+      lower.includes("logo")
+    ) {
+      category = "logo graphic";
+      usage =
+        "branding projects, company presentations, websites, business graphics and marketing materials";
+    }
+
+    else if (
+      lower.includes("food")
+    ) {
+      category = "food graphic";
+      usage =
+        "restaurant branding, menu designs, food advertisements, delivery apps and culinary presentations";
+    }
+
+    else if (
+      lower.includes("gaming") ||
+      lower.includes("game")
+    ) {
+      category = "gaming graphic";
+      usage =
+        "gaming thumbnails, streaming overlays, esports branding, wallpapers and gaming content creation";
+    }
+
+    else if (
+      lower.includes("abstract")
+    ) {
+      category = "abstract artwork";
+      usage =
+        "modern graphic design, website backgrounds, posters, creative branding and digital artwork";
+    }
 
     return `
-      ${intros[getVariant(title, intros.length)]}
-      ${usage[getVariant(title + "a", usage.length)]}
-      ${quality[getVariant(title + "b", quality.length)]}
-      Keywords: ${keywords}.
+    
+    <div class="seo-article">
+
+      <h2>
+        ${seoTitles[getVariant(title, seoTitles.length)]}
+      </h2>
+
+      <p>
+        ${introLines[getVariant(title + "intro", introLines.length)]}
+        This ${category} is suitable for ${usage}.
+        Ideal for designers, content creators, developers and digital marketing projects requiring transparent PNG assets.
+      </p>
+      
+      <h3>
+        PNG Specifications
+      </h3>
+
+      <table class="seo-table">
+
+        <tr>
+          <td>File Format</td>
+          <td>PNG</td>
+        </tr>
+
+        <tr>
+          <td>Background</td>
+          <td>Transparent</td>
+        </tr>
+
+        <tr>
+          <td>Resolution</td>
+          <td>${png.width} × ${png.height}</td>
+        </tr>
+
+        <tr>
+          <td>Category</td>
+          <td>${category}</td>
+        </tr>
+
+      </table>
+
+      <h3>
+        Popular Uses
+      </h3>
+
+      <ul class="seo-list">
+
+        <li>Graphic design</li>
+        <li>Social media creatives</li>
+        <li>Website design</li>
+        <li>YouTube thumbnails</li>
+        <li>Branding projects</li>
+
+      </ul>
+
+      <h3>
+        Related Keywords
+      </h3>
+
+      <p class="keyword-cloud">
+        ${keywords}
+      </p>
+
+      <h3>
+      People Also Search
+      </h3>
+
+      <div class="related-searches">
+
+        ${(tags || []).slice(0, 6).map(tag => `
+          <a href="/search?q=${encodeURIComponent(tag)}">
+            ${tag} transparent PNG
+          </a>
+        `).join("")}
+
+      </div>
+
+      <h3>
+      Frequently Asked Questions
+      </h3>
+
+      <div class="faq-box">
+
+        <h4>
+          Can I use this PNG for commercial projects?
+        </h4>
+
+        <p>
+          Yes, this transparent PNG image can be used for creative design workflows, branding, websites and commercial visual projects according to the PNGFam license policy.
+        </p>
+
+        <h4>
+          Does this image have transparent background?
+        </h4>
+
+        <p>
+          Yes, this PNG image includes a clean transparent background with optimized cutout edges.
+        </p>
+
+        <h4>
+          What is the resolution of this PNG?
+        </h4>
+
+        <p>
+          This PNG image resolution is ${png.width} × ${png.height}.
+        </p>
+
+      </div>
+
+    </div>
+
     `;
   };
 
   html = html.replace(
-    /<p id="seoText">.*?<\/p>/,
-    `<p id="seoText">${generateDescription(png.title)}</p>`
+    '<div id="dynamicSeoContent"></div>',
+    generateDescription(png)
   );
 
   const dynamicLinks = (png.tags || [])
@@ -227,8 +407,9 @@ app.get("/image/:slug", async (req, res) => {
     .map(tag => {
 
       return `
-        <a href="/search?q=${encodeURIComponent(tag)}">
-          ${tag} PNG
+        <a class="tag-link"
+        href="/search?q=${encodeURIComponent(tag)}">
+        ${tag}
         </a>
       `;
 
