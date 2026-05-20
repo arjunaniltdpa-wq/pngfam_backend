@@ -11,10 +11,14 @@ const app = express();
 
 const homeRoutes = require("./routes/homeRoutes");
 
+const compression = require("compression");
+
 /* CORS */
 app.use(cors({ origin: "*" }));
 
 app.use(express.json());
+
+app.use(compression());
 
 /* OG routes */
 const ogRoutes = require("./routes/ogRoutes");
@@ -46,8 +50,13 @@ const getVariant = (text, total) => {
 };
 
 app.get("/image/:slug", async (req, res) => {
-  const png = await PngImage.findOne({ slug: req.params.slug });
+
+  res.set("Cache-Control", "public, max-age=86400");
   
+  const png = await PngImage.findOne({
+    slug: req.params.slug
+  }).lean();
+
   if (!png) {
     return res.status(404).send("Not found");
   }
@@ -60,6 +69,7 @@ app.get("/image/:slug", async (req, res) => {
   html = html.replace(
     '<link rel="canonical" id="canonicalLink" href="">',
     `<link rel="canonical" href="https://www.pngfam.com/image/${png.slug}">`
+
   );
   html = html.replace(
     '<meta property="og:description" content="Download high-quality PNG with transparent background.">',
@@ -81,6 +91,7 @@ app.get("/image/:slug", async (req, res) => {
         ][getVariant(png.slug, 8)]
     }</title>`
   );
+
 
   html = html.replace(
     '<meta property="og:title" content="Free Transparent PNG Image Download">',
@@ -140,6 +151,8 @@ app.get("/image/:slug", async (req, res) => {
     /<img id="mainPreview"[^>]*>/,
     `<img id="mainPreview"
       src="${png.previewUrl || png.originalUrl}"
+      srcset="${png.previewUrl || png.originalUrl} 1200w"
+      sizes="(max-width: 768px) 100vw, 1200px"
       alt="${
       [
       `${png.title} transparent PNG`,
@@ -149,6 +162,7 @@ app.get("/image/:slug", async (req, res) => {
       `${png.title} cutout PNG image`
       ][getVariant(png.slug, 5)]
       }"
+      fetchpriority="high"
       width="1200"
       height="1200"
       loading="eager"
@@ -448,7 +462,7 @@ app.get("/image/:slug", async (req, res) => {
       `Download ${png.title} PNG with transparent background in HD quality.`,
 
     "contentUrl":
-      png.originalUrl || png.previewUrl,
+      png.originalUrl,
 
     "thumbnailUrl":
       png.thumbUrl || png.previewUrl,
@@ -498,6 +512,13 @@ app.get("/image/:slug", async (req, res) => {
       "@type": "Organization",
       "name": "PNGfam"
     },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.pngfam.com/image/${png.slug}`
+    },
+    
+    "embedUrl":
+    `https://www.pngfam.com/image/${png.slug}`,
 
     "publisher": {
       "@type": "Organization",
@@ -549,6 +570,11 @@ app.get("/image/:slug", async (req, res) => {
   ${JSON.stringify(breadcrumbSchema)}
   </script>
 
+  <link rel="preload"
+  as="image"
+  href="${png.previewUrl || png.originalUrl}"
+  fetchpriority="high">
+
   </head>`
   );
 
@@ -565,7 +591,9 @@ app.get("/category/:name", async (req, res) => {
 
   const pngs = await PngImage.find({
     title: { $regex: category, $options: "i" }
-  }).limit(100);
+  })
+  .limit(100)
+  .lean();
 
   let html = fs.readFileSync(
     path.join(__dirname, "public", "category.html"),
@@ -673,21 +701,22 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
   try {
     res.set("Content-Type", "application/xml");
     res.set("Cache-Control", "public, max-age=43200");
+    res.set("Last-Modified", new Date().toUTCString());
 
     const page = parseInt(req.params.page) || 1;
-    const limit = 5000;
+    const limit = 1000;
     const skip = (page - 1) * limit;
 
     const totalImages = await PngImage.countDocuments();
     if (skip >= totalImages) {
       return res.status(404).send("Not Found");
     }
-
     const pngs = await PngImage.find({})
       .sort({ _id: 1 })
       .skip(skip)
       .limit(limit)
-      .select("slug updatedAt originalUrl");
+      .select("slug updatedAt originalUrl")
+      .lean();
 
     const baseUrl = "https://www.pngfam.com";
 
@@ -718,24 +747,9 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
       // optional small thumbnail
       const thumbUrl = previewUrl.replace("/previews/", "/thumbs/");
 
-      const keywords = [
-        "graphic design",
-        "web design",
-        "advertisements",
-        "social media posts",
-        "presentations",
-        "posters",
-        "UI/UX design",
-        "branding",
-        "digital marketing",
-        "creative projects"
-      ].join(", ");
+      const caption =
+      `${cleanTitle} transparent PNG image with high-quality transparent background.`;
 
-      const caption = `Download high-quality ${cleanTitle} PNG with transparent background in ultra HD resolution. 
-      Free ${cleanTitle} transparent PNG perfect for graphic design, web design, advertisements, social media posts, presentations, posters, thumbnails, UI/UX design, branding, digital marketing and creative projects. 
-      This premium royalty-free PNG image features sharp details, clean cutout edges and optimized colors suitable for designers, developers, bloggers and marketers. 
-      Use this ${cleanTitle} PNG image for websites, apps, YouTube thumbnails, product mockups, presentations and professional marketing creatives requiring transparent background graphics.`;
-      
       const ageDays = (Date.now() - new Date(png.updatedAt)) / (1000 * 60 * 60 * 24);
       const changefreq = ageDays < 30 ? "weekly" : "yearly";
 
@@ -773,11 +787,12 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
 ========================= */
 app.get("/sitemap.xml", async (req, res) => {
   res.set("Content-Type", "application/xml");
-  res.set("Cache-Control", "public, max-age=3600");
+  res.set("Cache-Control", "public, max-age=86400");
+  res.set("Last-Modified", new Date().toUTCString());
 
   const baseUrl = "https://www.pngfam.com";
   const totalImages = await PngImage.countDocuments();
-  const limit = 5000;
+  const limit = 1000;
   const totalPages = Math.ceil(totalImages / limit);
   const now = new Date().toISOString();
 
