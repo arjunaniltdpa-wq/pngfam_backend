@@ -24,8 +24,6 @@ app.use(compression());
 const ogRoutes = require("./routes/ogRoutes");
 app.use("/api/og", ogRoutes);
 
-app.use("/", homeRoutes);
-
 /* Connect DB */
 connectDB();
 
@@ -832,10 +830,6 @@ app.get("/image/:slug", async (req, res) => {
     res.send(html);
 });
 
-/* Static frontend */
-app.use(express.static(path.join(__dirname, "public")));
-
-
 // 🔥 CATEGORY PAGE ROUTE
 app.get("/category/:name", async (req, res) => {
   const category = req.params.name.replace(/-/g, " ");
@@ -983,6 +977,10 @@ app.get("/category/:name", async (req, res) => {
   );
   res.send(html);
 });
+
+/* Static frontend */
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/", homeRoutes);
 
 /* API */
 app.use("/api/pngs", pngRoutes);
