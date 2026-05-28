@@ -24,6 +24,8 @@ app.use(compression());
 const ogRoutes = require("./routes/ogRoutes");
 app.use("/api/og", ogRoutes);
 
+app.use("/", homeRoutes);
+
 /* Connect DB */
 connectDB();
 
@@ -65,34 +67,6 @@ app.get("/image/:slug", async (req, res) => {
   })
   .limit(12)
   .lean();
-  const relatedHtml = relatedPngs.map(item => `
-
-  <a href="/image/${item.slug}" class="card-link">
-
-    <div class="card">
-
-      <div class="card-image">
-
-        <img
-          loading="lazy"
-          decoding="async"
-          width="300"
-          height="300"
-          src="${item.thumbUrl}"
-          alt="${item.title} transparent PNG">
-
-      </div>
-
-      <div class="card-title">
-        ${item.title}
-      </div>
-
-    </div>
-
-  </a>
-
-  `).join("");
-
 
   // Load your existing HTML file
   let html = fs.readFileSync(
@@ -208,56 +182,54 @@ app.get("/image/:slug", async (req, res) => {
     }"`
   );
 
+  // Inject IMAGE + TITLE directly (CRITICAL)
   html = html.replace(
+    /<img id="mainPreview"[^>]*>/,
 
-  "{{MAIN_IMAGE}}",
+    `<picture>
 
-  `
-  <div class="image-preview checker-bg">
+      <source
+        type="image/webp"
+        srcset="${png.previewUrl}">
 
-    <img
-      id="mainPreview"
-      itemprop="image"
-      src="${png.originalUrl}"
-      alt="${png.title} transparent PNG"
-      width="1200"
-      height="1200"
-      fetchpriority="high"
-      loading="eager"
-      decoding="async"
-      style="width:100%;height:auto;display:block;">
+      <img
+        id="mainPreview"
+        src="${png.originalUrl}"
+        srcset="${png.previewUrl || png.originalUrl} 1200w"
+        sizes="(max-width: 768px) 100vw, 1200px"
 
-    <p class="image-caption">
+        alt="${
+          [
+            `${png.title} transparent PNG free download`,
+            `${png.title} HD transparent background PNG`,
+            `${png.title} cutout PNG image`,
+            `${png.title} isolated transparent image`,
+            `${png.title} PNG for graphic design`
+          ][getVariant(png.slug, 5)]
+        }"
 
-      ${png.title}
-      transparent PNG image with high-quality isolated background.
+        fetchpriority="high"
+        width="1200"
+        height="1200"
+        loading="eager"
+        decoding="async"
 
-    </p>
+        style="width:100%;height:auto;display:block;">
 
-  </div>
-  `
-
+    </picture>`
   );
-  const h1Templates = [
 
-    `${png.title} PNG Transparent Background`,
-    `${png.title} Transparent PNG Image`,
-    `${png.title} PNG Free Download`,
-    `${png.title} HD Transparent PNG`,
-    `${png.title} PNG Background Transparent`
-
-  ];
   html = html.replace(
-
-  "{{TITLE}}",
-
-  h1Templates[
-    getVariant(
-      png.slug,
-      h1Templates.length
-    )
-  ]
-
+    "<h1>Free Transparent PNG Image</h1>",
+    `<h1>${
+      [
+        `${png.title} PNG Transparent Background`,
+        `${png.title} Transparent PNG Image`,
+        `${png.title} PNG Free Download`,
+        `${png.title} HD Transparent PNG`,
+        `${png.title} PNG Background Transparent`
+      ][getVariant(png.slug, 5)]
+    }</h1>`
   );
 
   const generateDescription = (png) => {
@@ -607,11 +579,25 @@ app.get("/image/:slug", async (req, res) => {
 
     })
     .join("");
+
+  const keywordLinks = `
+    <div class="seo-links">
+
+      <a href="/search?q=${encodeURIComponent(png.title)}">
+        More ${png.title} PNG
+      </a>
+
+      ${dynamicLinks}
+
+    </div>
+  `;
+
+  html = html.replace(
+    "</div>\n\n      <a class=\"download-btn\"",
+    `${keywordLinks}
     
-    html = html.replace(
-      '<div id="dynamicSeoContent"></div>',
-      generateDescription(png)
-    );
+        <a class="download-btn"`
+  );
 
   const schema = {
     "@context": "https://schema.org",
@@ -732,20 +718,10 @@ app.get("/image/:slug", async (req, res) => {
   };
 
   html = html.replace(
-
-  '<div class="grid"></div>',
-
-  `<div class="grid">
-  ${relatedHtml}
-  </div>`
-
-  );
-
-  html = html.replace(
     "</head>",
     `
   <link rel="image_src"
-  href="${png.previewUrl || png.originalUrl}">
+  href="${png.previewUrl || png.originalUrl}"></link>
 
     <script type="application/ld+json">
   ${JSON.stringify(schema)}
@@ -763,45 +739,12 @@ app.get("/image/:slug", async (req, res) => {
   </head>`
   );
 
-  const tagsHtml = (png.tags || [])
-
-  .map(tag => `
-
-  <a
-  class="tag-link"
-  href="/search?q=${encodeURIComponent(tag)}">
-
-  ${tag}
-
-  </a>
-
-  `).join("");
-
-  html = html.replace(
-
-  '<div class="tags"></div>',
-
-  `<div class="tags">
-  ${tagsHtml}
-  </div>`
-
-  );
-
-  html = html.replace(
-
-  "{{BREADCRUMB}}",
-
-  png.title
-
-  );
-
-  html = html.replace(
-  '{{DIMENSIONS}}',
-  `${png.width} × ${png.height}`
-  );
-
     res.send(html);
 });
+
+/* Static frontend */
+app.use(express.static(path.join(__dirname, "public")));
+
 
 // 🔥 CATEGORY PAGE ROUTE
 app.get("/category/:name", async (req, res) => {
@@ -834,126 +777,10 @@ app.get("/category/:name", async (req, res) => {
   });
 
   html = html.replace("{{CATEGORY_TITLE}}", category.toUpperCase());
-  const categoryLower =
-  category.toLowerCase();
+  html = html.replace("{{GRID}}", gridHTML);
 
-  let categoryDescription =
-  `Browse high-quality ${category} transparent PNG images with isolated backgrounds for creative projects, branding, websites and graphic design workflows.`;
-
-  let categoryUsage =
-  `Perfect for graphic designers, content creators, digital artists and branding professionals.`;
-
-  if (
-    categoryLower.includes("car")
-  ) {
-
-    categoryDescription =
-    `Explore premium car PNG images with transparent backgrounds in HD quality. Download sports cars, luxury vehicles, racing graphics and automotive transparent PNG assets for creative projects.`;
-
-    categoryUsage =
-    `Perfect for automotive branding, racing posters, transport graphics, wallpapers and YouTube thumbnails.`;
-  }
-
-  else if (
-    categoryLower.includes("anime")
-  ) {
-
-    categoryDescription =
-    `Discover high-quality anime PNG images with transparent backgrounds for edits, wallpapers and digital artwork.`;
-
-    categoryUsage =
-    `Suitable for anime edits, manga artwork, gaming content, streaming graphics and Japanese themed creative projects.`;
-  }
-
-  else if (
-    categoryLower.includes("logo")
-  ) {
-
-    categoryDescription =
-    `Download transparent logo PNG images in HD quality for branding and business projects.`;
-
-    categoryUsage =
-    `Perfect for websites, business presentations, brand identity systems and marketing graphics.`;
-  }
-
-  else if (
-    categoryLower.includes("flower")
-  ) {
-
-    categoryDescription =
-    `Browse beautiful flower PNG images with transparent backgrounds for floral and decorative designs.`;
-
-    categoryUsage =
-    `Ideal for wedding invitations, greeting cards, wallpapers, botanical artwork and decorative branding.`;
-  }
-
-  else if (
-    categoryLower.includes("gaming")
-  ) {
-
-    categoryDescription =
-    `Explore gaming PNG images with transparent backgrounds for esports, streaming and gaming content creation.`;
-
-    categoryUsage =
-    `Perfect for gaming thumbnails, streaming overlays, esports branding and YouTube content.`;
-  }
-
-  const categorySeo = `
-
-  <section class="category-seo">
-
-    <h1>
-      ${category.toUpperCase()} PNG Images
-    </h1>
-
-    <p>
-      ${categoryDescription}
-    </p>
-
-    <p>
-      ${categoryUsage}
-    </p>
-
-    <div class="category-keywords">
-
-      <a href="/search?q=${encodeURIComponent(category)} png">
-        ${category} PNG
-      </a>
-
-      <a href="/search?q=${encodeURIComponent(category)} transparent png">
-        ${category} transparent PNG
-      </a>
-
-      <a href="/search?q=${encodeURIComponent(category)} hd png">
-        ${category} HD PNG
-      </a>
-
-      <a href="/search?q=${encodeURIComponent(category)} background removed png">
-        ${category} background removed PNG
-      </a>
-
-    </div>
-
-  </section>
-
-  <section class="category-grid">
-
-    ${gridHTML}
-
-  </section>
-
-  `;
-
-  html = html.replace(
-    "{{GRID}}",
-    categorySeo
-  );
   res.send(html);
 });
-
-/* Static frontend */
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/", homeRoutes);
 
 /* API */
 app.use("/api/pngs", pngRoutes);
@@ -1038,7 +865,7 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
     res.set("Last-Modified", new Date().toUTCString());
 
     const page = parseInt(req.params.page) || 1;
-    const limit = 100;
+    const limit = 1000;
     const skip = (page - 1) * limit;
 
     const totalImages = await PngImage.countDocuments();
@@ -1126,7 +953,7 @@ app.get("/sitemap.xml", async (req, res) => {
 
   const baseUrl = "https://www.pngfam.com";
   const totalImages = await PngImage.countDocuments();
-  const limit = 100;
+  const limit = 1000;
   const totalPages = Math.ceil(totalImages / limit);
   const now = new Date().toISOString();
 
