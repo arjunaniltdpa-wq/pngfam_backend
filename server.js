@@ -212,7 +212,7 @@ app.get("/image/:slug", async (req, res) => {
 
   html = html.replace(
 
-  '{{MAIN_IMAGE}}',
+  "{{MAIN_IMAGE}}",
 
   `
   <div class="image-preview checker-bg">
@@ -221,31 +221,18 @@ app.get("/image/:slug", async (req, res) => {
 
       <source
         type="image/webp"
-        srcset="${png.previewUrl}">
+        srcset="${png.previewUrl || png.originalUrl}">
 
       <img
         id="mainPreview"
         itemprop="image"
         src="${png.originalUrl}"
-        srcset="${png.previewUrl || png.originalUrl} 1200w"
-        sizes="(max-width: 768px) 100vw, 1200px"
-
-        alt="${
-          [
-            `${png.title} transparent PNG free download`,
-            `${png.title} HD transparent background PNG`,
-            `${png.title} cutout PNG image`,
-            `${png.title} isolated transparent image`,
-            `${png.title} PNG for graphic design`
-          ][getVariant(png.slug, 5)]
-        }"
-
-        fetchpriority="high"
+        alt="${png.title} transparent PNG"
         width="1200"
         height="1200"
+        fetchpriority="high"
         loading="eager"
         decoding="async"
-
         style="width:100%;height:auto;display:block;">
 
     </picture>
@@ -261,7 +248,6 @@ app.get("/image/:slug", async (req, res) => {
   `
 
   );
-
   const h1Templates = [
 
     `${png.title} PNG Transparent Background`,
@@ -271,21 +257,16 @@ app.get("/image/:slug", async (req, res) => {
     `${png.title} PNG Background Transparent`
 
   ];
-
   html = html.replace(
 
-  /<h1 class="image-title">[\s\S]*?<\/h1>/,
+  "{{TITLE}}",
 
-  `<h1 class="image-title">
-  ${
-    h1Templates[
-      getVariant(
-        png.slug,
-        h1Templates.length
-      )
-    ]
-  }
-  </h1>`
+  h1Templates[
+    getVariant(
+      png.slug,
+      h1Templates.length
+    )
+  ]
 
   );
 
@@ -837,11 +818,9 @@ app.get("/image/:slug", async (req, res) => {
 
   html = html.replace(
 
-  '<span id="breadcrumbTitle">{{BREADCRUMB}}</span>',
+  "{{BREADCRUMB}}",
 
-  `<span id="breadcrumbTitle">
-  ${png.title}
-  </span>`
+  png.title
 
   );
 
