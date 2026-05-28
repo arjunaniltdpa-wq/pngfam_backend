@@ -215,25 +215,17 @@ app.get("/image/:slug", async (req, res) => {
   `
   <div class="image-preview checker-bg">
 
-    <picture>
-
-      <source
-        type="image/webp"
-        srcset="${png.previewUrl || png.originalUrl}">
-
-      <img
-        id="mainPreview"
-        itemprop="image"
-        src="${png.originalUrl}"
-        alt="${png.title} transparent PNG"
-        width="1200"
-        height="1200"
-        fetchpriority="high"
-        loading="eager"
-        decoding="async"
-        style="width:100%;height:auto;display:block;">
-
-    </picture>
+    <img
+      id="mainPreview"
+      itemprop="image"
+      src="${png.originalUrl}"
+      alt="${png.title} transparent PNG"
+      width="1200"
+      height="1200"
+      fetchpriority="high"
+      loading="eager"
+      decoding="async"
+      style="width:100%;height:auto;display:block;">
 
     <p class="image-caption">
 
@@ -620,25 +612,6 @@ app.get("/image/:slug", async (req, res) => {
       '<div id="dynamicSeoContent"></div>',
       generateDescription(png)
     );
-
-  const keywordLinks = `
-    <div class="seo-links">
-
-      <a href="/search?q=${encodeURIComponent(png.title)}">
-        More ${png.title} PNG
-      </a>
-
-      ${dynamicLinks}
-
-    </div>
-  `;
-
-  html = html.replace(
-    "</div>\n\n      <a class=\"download-btn\"",
-    `${keywordLinks}
-    
-        <a class="download-btn"`
-  );
 
   const schema = {
     "@context": "https://schema.org",
