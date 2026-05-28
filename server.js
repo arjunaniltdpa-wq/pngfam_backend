@@ -61,6 +61,41 @@ app.get("/image/:slug", async (req, res) => {
     return res.status(404).send("Not found");
   }
 
+  const relatedPngs = await PngImage.find({
+    tags: { $in: png.tags || [] },
+    slug: { $ne: png.slug }
+  })
+  .limit(12)
+  .lean();
+  const relatedHtml = relatedPngs.map(item => `
+
+  <a href="/image/${item.slug}" class="card-link">
+
+    <div class="card">
+
+      <div class="card-image">
+
+        <img
+          loading="lazy"
+          decoding="async"
+          width="300"
+          height="300"
+          src="${item.thumbUrl}"
+          alt="${item.title} transparent PNG">
+
+      </div>
+
+      <div class="card-title">
+        ${item.title}
+      </div>
+
+    </div>
+
+  </a>
+
+  `).join("");
+
+
   // Load your existing HTML file
   let html = fs.readFileSync(
     path.join(__dirname, "public", "image.html"),
@@ -75,23 +110,52 @@ app.get("/image/:slug", async (req, res) => {
     '<meta property="og:description" content="Download high-quality PNG with transparent background.">',
     `<meta property="og:description" content="Download ${png.title} PNG with transparent background in HD quality.">`
   );
+
   // Inject SEO (IMPORTANT)
+  const titleTemplates = [
+
+    `${png.title} Transparent PNG Background Image`,
+    `Free ${png.title} PNG HD Download`,
+    `${png.title} Cutout PNG for Graphic Design`,
+    `${png.title} Isolated Transparent PNG`,
+    `${png.title} High Resolution PNG Asset`,
+    `${png.title} Transparent Background Graphic`,
+    `${png.title} PNG Clipart for Creative Projects`,
+    `${png.title} Premium Transparent PNG Image`,
+    `${png.title} PNG Free Download`,
+    `${png.title} HD Transparent Background PNG`,
+    `${png.title} Transparent PNG for Designers`,
+    `${png.title} Ultra HD PNG Image`,
+    `${png.title} Transparent Graphic Resource`,
+    `${png.title} PNG with Transparent Background`,
+    `${png.title} Commercial Use Transparent PNG`,
+    `${png.title} Professional PNG Graphic`,
+    `${png.title} Transparent Cutout Image`,
+    `${png.title} Creative Transparent PNG Asset`,
+    `${png.title} PNG Design Resource`,
+    `${png.title} Editable Transparent PNG`,
+    `${png.title} Transparent PNG for Photoshop`,
+    `${png.title} High Quality PNG Image`,
+    `${png.title} Background Removed PNG`,
+    `${png.title} Transparent Artwork PNG`,
+    `${png.title} Isolated Graphic PNG`,
+    `${png.title} Transparent PNG for Websites`,
+    `${png.title} Free Transparent Graphic`,
+    `${png.title} Premium PNG Download`,
+    `${png.title} Transparent PNG for Branding`,
+    `${png.title} HD PNG Graphic Asset`
+
+  ];
+
   html = html.replace(
     "<title>Free Transparent PNG Images Download HD</title>",
+
     `<title>${
-        [
-          `${png.title} Transparent PNG Background Image`,
-          `Free ${png.title} PNG HD Download`,
-          `${png.title} Cutout PNG for Graphic Design`,
-          `${png.title} Isolated Transparent PNG`,
-          `${png.title} High Resolution PNG Asset`,
-          `${png.title} Transparent Background Graphic`,
-          `${png.title} PNG Clipart for Creative Projects`,
-          `${png.title} Premium Transparent PNG Image`
-        ][getVariant(png.slug, 8)]
+      titleTemplates[
+        getVariant(png.slug, titleTemplates.length)
+      ]
     }</title>`
   );
-
 
   html = html.replace(
     '<meta property="og:title" content="Free Transparent PNG Image Download">',
@@ -146,41 +210,83 @@ app.get("/image/:slug", async (req, res) => {
     }"`
   );
 
-  // Inject IMAGE + TITLE directly (CRITICAL)
   html = html.replace(
-    /<img id="mainPreview"[^>]*>/,
-    `<img id="mainPreview"
-      src="${png.previewUrl || png.originalUrl}"
-      srcset="${png.previewUrl || png.originalUrl} 1200w"
-      sizes="(max-width: 768px) 100vw, 1200px"
-      alt="${
-      [
-      `${png.title} transparent PNG`,
-      `${png.title} PNG free download`,
-      `${png.title} high quality transparent image`,
-      `${png.title} PNG background transparent`,
-      `${png.title} cutout PNG image`
-      ][getVariant(png.slug, 5)]
-      }"
-      fetchpriority="high"
-      width="1200"
-      height="1200"
-      loading="eager"
-      decoding="async"
-      style="width:100%;height:auto;display:block;">`
+
+  '{{MAIN_IMAGE}}',
+
+  `
+  <div class="image-preview checker-bg">
+
+    <picture>
+
+      <source
+        type="image/webp"
+        srcset="${png.previewUrl}">
+
+      <img
+        id="mainPreview"
+        itemprop="image"
+        src="${png.originalUrl}"
+        srcset="${png.previewUrl || png.originalUrl} 1200w"
+        sizes="(max-width: 768px) 100vw, 1200px"
+
+        alt="${
+          [
+            `${png.title} transparent PNG free download`,
+            `${png.title} HD transparent background PNG`,
+            `${png.title} cutout PNG image`,
+            `${png.title} isolated transparent image`,
+            `${png.title} PNG for graphic design`
+          ][getVariant(png.slug, 5)]
+        }"
+
+        fetchpriority="high"
+        width="1200"
+        height="1200"
+        loading="eager"
+        decoding="async"
+
+        style="width:100%;height:auto;display:block;">
+
+    </picture>
+
+    <p class="image-caption">
+
+      ${png.title}
+      transparent PNG image with high-quality isolated background.
+
+    </p>
+
+  </div>
+  `
+
   );
 
+  const h1Templates = [
+
+    `${png.title} PNG Transparent Background`,
+    `${png.title} Transparent PNG Image`,
+    `${png.title} PNG Free Download`,
+    `${png.title} HD Transparent PNG`,
+    `${png.title} PNG Background Transparent`
+
+  ];
+
   html = html.replace(
-    "<h1>Free Transparent PNG Image</h1>",
-    `<h1>${
-      [
-        `${png.title} PNG Transparent Background`,
-        `${png.title} Transparent PNG Image`,
-        `${png.title} PNG Free Download`,
-        `${png.title} HD Transparent PNG`,
-        `${png.title} PNG Background Transparent`
-      ][getVariant(png.slug, 5)]
-    }</h1>`
+
+  /<h1 class="image-title">[\s\S]*?<\/h1>/,
+
+  `<h1 class="image-title">
+  ${
+    h1Templates[
+      getVariant(
+        png.slug,
+        h1Templates.length
+      )
+    ]
+  }
+  </h1>`
+
   );
 
   const generateDescription = (png) => {
@@ -196,43 +302,165 @@ app.get("/image/:slug", async (req, res) => {
 
     const lower =
       title.toLowerCase();
-      
+
+    /* =========================
+      SEO TITLES (30)
+    ========================= */
+
     const seoTitles = [
 
-    `${title} Transparent PNG Image`,
-
-    `${title} PNG Free Download`,
-
-    `${title} HD Transparent Background PNG`,
-
-    `${title} Isolated PNG Graphic`,
-
-    `${title} Transparent Background Image`
+      `${title} Transparent PNG Image`,
+      `${title} PNG Free Download`,
+      `${title} HD Transparent Background PNG`,
+      `${title} Isolated PNG Graphic`,
+      `${title} Transparent Background Image`,
+      `${title} High Resolution PNG Asset`,
+      `${title} Transparent PNG for Designers`,
+      `${title} Professional PNG Graphic`,
+      `${title} Transparent Cutout PNG`,
+      `${title} PNG Graphic Resource`,
+      `${title} Premium Transparent PNG`,
+      `${title} Creative PNG Asset`,
+      `${title} Transparent PNG Download`,
+      `${title} PNG with Transparent Background`,
+      `${title} Commercial Use PNG`,
+      `${title} Transparent Artwork PNG`,
+      `${title} PNG for Photoshop`,
+      `${title} Ultra HD Transparent PNG`,
+      `${title} PNG for Creative Projects`,
+      `${title} Isolated Transparent Image`,
+      `${title} Background Removed PNG`,
+      `${title} Transparent Graphic Resource`,
+      `${title} Free Transparent Graphic`,
+      `${title} High Quality Transparent PNG`,
+      `${title} Professional Design PNG`,
+      `${title} Transparent PNG for Branding`,
+      `${title} Designer Resource PNG`,
+      `${title} Transparent PNG Illustration`,
+      `${title} Studio Quality PNG`,
+      `${title} Editable Transparent PNG`
 
     ];
+
+    /* =========================
+      INTRO LINES (30)
+    ========================= */
 
     const introLines = [
 
-    `Download high-resolution ${title} transparent PNG image with clean transparent background.`,
+      `Download high-resolution ${title} transparent PNG image with clean transparent background.`,
 
-    `Explore premium ${title} PNG image optimized for creative design projects.`,
+      `Explore premium ${title} PNG image optimized for creative design projects.`,
 
-    `Free transparent ${title} PNG graphic with sharp details and isolated background.`,
+      `Free transparent ${title} PNG graphic with sharp details and isolated background.`,
 
-    `${title} PNG transparent background image suitable for modern digital design workflows.`,
+      `${title} PNG transparent background image suitable for modern digital design workflows.`,
 
-    `Professional ${title} transparent PNG asset for branding, websites and creative media.`
+      `Professional ${title} transparent PNG asset for branding, websites and creative media.`,
+
+      `${title} transparent PNG image available in high quality for free download.`,
+
+      `Creative ${title} PNG graphic designed for professional editing and visual content.`,
+
+      `Discover ultra HD ${title} PNG with isolated transparent background.`,
+
+      `${title} PNG resource perfect for designers, creators and digital artists.`,
+
+      `Download premium quality ${title} transparent image for branding and media projects.`,
+
+      `${title} isolated PNG image with clean cutout edges and transparent background.`,
+
+      `Free high-quality ${title} PNG suitable for modern graphic workflows.`,
+
+      `${title} PNG clipart optimized for commercial and personal projects.`,
+
+      `Professional transparent ${title} image for websites, thumbnails and presentations.`,
+
+      `${title} transparent PNG graphic with studio-quality cutout details.`,
+
+      `Download editable ${title} PNG image with transparent background.`,
+
+      `${title} PNG file ideal for posters, social media and digital branding.`,
+
+      `Transparent ${title} graphic asset designed for creative professionals.`,
+
+      `${title} HD PNG image with sharp transparent cutout.`,
+
+      `Free ${title} PNG download optimized for Photoshop and editing software.`,
+
+      `${title} transparent image resource for designers and content creators.`,
+
+      `Download clean transparent ${title} PNG artwork in ultra HD quality.`,
+
+      `${title} transparent PNG optimized for websites and digital media.`,
+
+      `Professional-grade ${title} PNG image for commercial design projects.`,
+
+      `Transparent ${title} PNG image for branding, advertising and editing.`,
+
+      `${title} PNG asset with high-quality isolated transparent background.`,
+
+      `Download premium ${title} transparent PNG with crisp details.`,
+
+      `${title} PNG image crafted for modern visual design projects.`,
+
+      `Free ultra HD ${title} transparent graphic resource.`,
+
+      `${title} isolated transparent PNG ideal for creative compositions.`
 
     ];
-    
-    // CATEGORY DETECTION
+
+    /* =========================
+      DESIGNER LINES (30)
+    ========================= */
+
+    const designerLines = [
+
+      `Ideal for graphic designers, marketers and creative studios.`,
+      `Perfect for branding presentations and social media graphics.`,
+      `Useful for website banners, posters and creative compositions.`,
+      `Designed for professional digital artwork and editing workflows.`,
+      `Suitable for Photoshop edits, thumbnails and commercial designs.`,
+      `Optimized for content creators and creative agencies.`,
+      `Perfect for advertising campaigns and branding visuals.`,
+      `Useful for print design and online creative projects.`,
+      `Suitable for creative professionals and visual designers.`,
+      `Ideal for digital art and multimedia presentations.`,
+      `Designed for modern UI design and promotional media.`,
+      `Perfect for YouTube thumbnails and social media creatives.`,
+      `Useful for web design and transparent overlays.`,
+      `Suitable for modern visual communication projects.`,
+      `Ideal for business graphics and digital campaigns.`,
+      `Perfect for online stores and branding assets.`,
+      `Useful for editorial design and visual storytelling.`,
+      `Optimized for creative branding workflows.`,
+      `Ideal for professional presentations and marketing.`,
+      `Perfect for posters and graphic compositions.`,
+      `Suitable for commercial creative projects.`,
+      `Designed for high-end digital media production.`,
+      `Useful for premium visual branding.`,
+      `Ideal for modern graphic assets and layouts.`,
+      `Perfect for transparent visual effects and overlays.`,
+      `Suitable for promotional graphics and advertisements.`,
+      `Designed for creators, editors and agencies.`,
+      `Useful for digital marketing materials.`,
+      `Perfect for cinematic design compositions.`,
+      `Ideal for scalable creative workflows.`
+
+    ];
+
+    /* =========================
+      CATEGORY DETECTION
+    ========================= */
 
     if (
       lower.includes("shirt") ||
       lower.includes("hoodie") ||
       lower.includes("fashion")
     ) {
+
       category = "fashion apparel";
+
       usage =
         "fashion branding, clothing mockups, print-on-demand projects, apparel advertisements and streetwear presentations";
     }
@@ -241,7 +469,9 @@ app.get("/image/:slug", async (req, res) => {
       lower.includes("car") ||
       lower.includes("bike")
     ) {
+
       category = "automotive graphic";
+
       usage =
         "automotive branding, racing posters, transport graphics, YouTube thumbnails and vehicle design projects";
     }
@@ -249,7 +479,9 @@ app.get("/image/:slug", async (req, res) => {
     else if (
       lower.includes("anime")
     ) {
+
       category = "anime artwork";
+
       usage =
         "anime edits, manga artwork, gaming thumbnails, wallpapers and Japanese themed creative projects";
     }
@@ -258,7 +490,9 @@ app.get("/image/:slug", async (req, res) => {
       lower.includes("flower") ||
       lower.includes("rose")
     ) {
+
       category = "floral graphic";
+
       usage =
         "greeting cards, floral branding, wedding invitations, wallpapers and botanical design projects";
     }
@@ -266,7 +500,9 @@ app.get("/image/:slug", async (req, res) => {
     else if (
       lower.includes("logo")
     ) {
+
       category = "logo graphic";
+
       usage =
         "branding projects, company presentations, websites, business graphics and marketing materials";
     }
@@ -274,7 +510,9 @@ app.get("/image/:slug", async (req, res) => {
     else if (
       lower.includes("food")
     ) {
+
       category = "food graphic";
+
       usage =
         "restaurant branding, menu designs, food advertisements, delivery apps and culinary presentations";
     }
@@ -283,7 +521,9 @@ app.get("/image/:slug", async (req, res) => {
       lower.includes("gaming") ||
       lower.includes("game")
     ) {
+
       category = "gaming graphic";
+
       usage =
         "gaming thumbnails, streaming overlays, esports branding, wallpapers and gaming content creation";
     }
@@ -291,7 +531,9 @@ app.get("/image/:slug", async (req, res) => {
     else if (
       lower.includes("abstract")
     ) {
+
       category = "abstract artwork";
+
       usage =
         "modern graphic design, website backgrounds, posters, creative branding and digital artwork";
     }
@@ -306,10 +548,12 @@ app.get("/image/:slug", async (req, res) => {
 
       <p>
         ${introLines[getVariant(title + "intro", introLines.length)]}
+
         This ${category} is suitable for ${usage}.
-        Ideal for designers, content creators, developers and digital marketing projects requiring transparent PNG assets.
+
+        ${designerLines[getVariant(title + "designer", designerLines.length)]}
       </p>
-      
+
       <h3>
         PNG Specifications
       </h3>
@@ -361,7 +605,7 @@ app.get("/image/:slug", async (req, res) => {
       </p>
 
       <h3>
-      People Also Search
+        People Also Search
       </h3>
 
       <div class="related-searches">
@@ -374,47 +618,10 @@ app.get("/image/:slug", async (req, res) => {
 
       </div>
 
-      <h3>
-      Frequently Asked Questions
-      </h3>
-
-      <div class="faq-box">
-
-        <h4>
-          Can I use this PNG for commercial projects?
-        </h4>
-
-        <p>
-          Yes, this transparent PNG image can be used for creative design workflows, branding, websites and commercial visual projects according to the PNGFam license policy.
-        </p>
-
-        <h4>
-          Does this image have transparent background?
-        </h4>
-
-        <p>
-          Yes, this PNG image includes a clean transparent background with optimized cutout edges.
-        </p>
-
-        <h4>
-          What is the resolution of this PNG?
-        </h4>
-
-        <p>
-          This PNG image resolution is ${png.width} × ${png.height}.
-        </p>
-
-      </div>
-
     </div>
 
     `;
   };
-
-  html = html.replace(
-    '<div id="dynamicSeoContent"></div>',
-    generateDescription(png)
-  );
 
   const dynamicLinks = (png.tags || [])
     .slice(0, 6)
@@ -429,6 +636,11 @@ app.get("/image/:slug", async (req, res) => {
 
     })
     .join("");
+    
+    html = html.replace(
+      '<div id="dynamicSeoContent"></div>',
+      generateDescription(png)
+    );
 
   const keywordLinks = `
     <div class="seo-links">
@@ -460,6 +672,14 @@ app.get("/image/:slug", async (req, res) => {
 
     "description":
       `Download ${png.title} PNG with transparent background in HD quality.`,
+
+    "image": png.previewUrl || png.originalUrl,
+
+    "caption":
+    `${png.title} transparent PNG image`,
+
+    "headline":
+    `${png.title} PNG Transparent Background`,
 
     "contentUrl":
       png.originalUrl,
@@ -560,9 +780,22 @@ app.get("/image/:slug", async (req, res) => {
   };
 
   html = html.replace(
+
+  '<div class="grid"></div>',
+
+  `<div class="grid">
+  ${relatedHtml}
+  </div>`
+
+  );
+
+  html = html.replace(
     "</head>",
     `
-  <script type="application/ld+json">
+  <link rel="image_src"
+  href="${png.previewUrl || png.originalUrl}">
+
+    <script type="application/ld+json">
   ${JSON.stringify(schema)}
   </script>
 
@@ -576,6 +809,45 @@ app.get("/image/:slug", async (req, res) => {
   fetchpriority="high">
 
   </head>`
+  );
+
+  const tagsHtml = (png.tags || [])
+
+  .map(tag => `
+
+  <a
+  class="tag-link"
+  href="/search?q=${encodeURIComponent(tag)}">
+
+  ${tag}
+
+  </a>
+
+  `).join("");
+
+  html = html.replace(
+
+  '<div class="tags"></div>',
+
+  `<div class="tags">
+  ${tagsHtml}
+  </div>`
+
+  );
+
+  html = html.replace(
+
+  '<span id="breadcrumbTitle">{{BREADCRUMB}}</span>',
+
+  `<span id="breadcrumbTitle">
+  ${png.title}
+  </span>`
+
+  );
+
+  html = html.replace(
+  '{{DIMENSIONS}}',
+  `${png.width} × ${png.height}`
   );
 
     res.send(html);
@@ -616,8 +888,120 @@ app.get("/category/:name", async (req, res) => {
   });
 
   html = html.replace("{{CATEGORY_TITLE}}", category.toUpperCase());
-  html = html.replace("{{GRID}}", gridHTML);
+  const categoryLower =
+  category.toLowerCase();
 
+  let categoryDescription =
+  `Browse high-quality ${category} transparent PNG images with isolated backgrounds for creative projects, branding, websites and graphic design workflows.`;
+
+  let categoryUsage =
+  `Perfect for graphic designers, content creators, digital artists and branding professionals.`;
+
+  if (
+    categoryLower.includes("car")
+  ) {
+
+    categoryDescription =
+    `Explore premium car PNG images with transparent backgrounds in HD quality. Download sports cars, luxury vehicles, racing graphics and automotive transparent PNG assets for creative projects.`;
+
+    categoryUsage =
+    `Perfect for automotive branding, racing posters, transport graphics, wallpapers and YouTube thumbnails.`;
+  }
+
+  else if (
+    categoryLower.includes("anime")
+  ) {
+
+    categoryDescription =
+    `Discover high-quality anime PNG images with transparent backgrounds for edits, wallpapers and digital artwork.`;
+
+    categoryUsage =
+    `Suitable for anime edits, manga artwork, gaming content, streaming graphics and Japanese themed creative projects.`;
+  }
+
+  else if (
+    categoryLower.includes("logo")
+  ) {
+
+    categoryDescription =
+    `Download transparent logo PNG images in HD quality for branding and business projects.`;
+
+    categoryUsage =
+    `Perfect for websites, business presentations, brand identity systems and marketing graphics.`;
+  }
+
+  else if (
+    categoryLower.includes("flower")
+  ) {
+
+    categoryDescription =
+    `Browse beautiful flower PNG images with transparent backgrounds for floral and decorative designs.`;
+
+    categoryUsage =
+    `Ideal for wedding invitations, greeting cards, wallpapers, botanical artwork and decorative branding.`;
+  }
+
+  else if (
+    categoryLower.includes("gaming")
+  ) {
+
+    categoryDescription =
+    `Explore gaming PNG images with transparent backgrounds for esports, streaming and gaming content creation.`;
+
+    categoryUsage =
+    `Perfect for gaming thumbnails, streaming overlays, esports branding and YouTube content.`;
+  }
+
+  const categorySeo = `
+
+  <section class="category-seo">
+
+    <h1>
+      ${category.toUpperCase()} PNG Images
+    </h1>
+
+    <p>
+      ${categoryDescription}
+    </p>
+
+    <p>
+      ${categoryUsage}
+    </p>
+
+    <div class="category-keywords">
+
+      <a href="/search?q=${encodeURIComponent(category)} png">
+        ${category} PNG
+      </a>
+
+      <a href="/search?q=${encodeURIComponent(category)} transparent png">
+        ${category} transparent PNG
+      </a>
+
+      <a href="/search?q=${encodeURIComponent(category)} hd png">
+        ${category} HD PNG
+      </a>
+
+      <a href="/search?q=${encodeURIComponent(category)} background removed png">
+        ${category} background removed PNG
+      </a>
+
+    </div>
+
+  </section>
+
+  <section class="category-grid">
+
+    ${gridHTML}
+
+  </section>
+
+  `;
+
+  html = html.replace(
+    "{{GRID}}",
+    categorySeo
+  );
   res.send(html);
 });
 
@@ -704,7 +1088,7 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
     res.set("Last-Modified", new Date().toUTCString());
 
     const page = parseInt(req.params.page) || 1;
-    const limit = 1000;
+    const limit = 100;
     const skip = (page - 1) * limit;
 
     const totalImages = await PngImage.countDocuments();
@@ -792,7 +1176,7 @@ app.get("/sitemap.xml", async (req, res) => {
 
   const baseUrl = "https://www.pngfam.com";
   const totalImages = await PngImage.countDocuments();
-  const limit = 1000;
+  const limit = 100;
   const totalPages = Math.ceil(totalImages / limit);
   const now = new Date().toISOString();
 
