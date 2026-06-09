@@ -68,6 +68,22 @@ app.get("/image/:slug", async (req, res) => {
   .limit(12)
   .lean();
 
+  let relatedHTML = "";
+
+  relatedPngs.forEach(item => {
+    relatedHTML += `
+      <a class="card card-link" href="/image/${item.slug}">
+        <div class="card-image">
+          <img
+            loading="lazy"
+            src="${item.thumbUrl}"
+            alt="${item.title}">
+        </div>
+        <p class="card-title">${item.title}</p>
+      </a>
+    `;
+  });
+
   // Load your existing HTML file
   let html = fs.readFileSync(
     path.join(__dirname, "public", "image.html"),
@@ -84,49 +100,9 @@ app.get("/image/:slug", async (req, res) => {
   );
 
   // Inject SEO (IMPORTANT)
-  const titleTemplates = [
-
-    `${png.title} Transparent PNG Background Image`,
-    `Free ${png.title} PNG HD Download`,
-    `${png.title} Cutout PNG for Graphic Design`,
-    `${png.title} Isolated Transparent PNG`,
-    `${png.title} High Resolution PNG Asset`,
-    `${png.title} Transparent Background Graphic`,
-    `${png.title} PNG Clipart for Creative Projects`,
-    `${png.title} Premium Transparent PNG Image`,
-    `${png.title} PNG Free Download`,
-    `${png.title} HD Transparent Background PNG`,
-    `${png.title} Transparent PNG for Designers`,
-    `${png.title} Ultra HD PNG Image`,
-    `${png.title} Transparent Graphic Resource`,
-    `${png.title} PNG with Transparent Background`,
-    `${png.title} Commercial Use Transparent PNG`,
-    `${png.title} Professional PNG Graphic`,
-    `${png.title} Transparent Cutout Image`,
-    `${png.title} Creative Transparent PNG Asset`,
-    `${png.title} PNG Design Resource`,
-    `${png.title} Editable Transparent PNG`,
-    `${png.title} Transparent PNG for Photoshop`,
-    `${png.title} High Quality PNG Image`,
-    `${png.title} Background Removed PNG`,
-    `${png.title} Transparent Artwork PNG`,
-    `${png.title} Isolated Graphic PNG`,
-    `${png.title} Transparent PNG for Websites`,
-    `${png.title} Free Transparent Graphic`,
-    `${png.title} Premium PNG Download`,
-    `${png.title} Transparent PNG for Branding`,
-    `${png.title} HD PNG Graphic Asset`
-
-  ];
-
   html = html.replace(
     "<title>Free Transparent PNG Images Download HD</title>",
-
-    `<title>${
-      titleTemplates[
-        getVariant(png.slug, titleTemplates.length)
-      ]
-    }</title>`
+    `<title>${png.title} PNG Transparent Background | PNGfam</title>`
   );
 
   html = html.replace(
@@ -198,15 +174,7 @@ app.get("/image/:slug", async (req, res) => {
         srcset="${png.previewUrl || png.originalUrl} 1200w"
         sizes="(max-width: 768px) 100vw, 1200px"
 
-        alt="${
-          [
-            `${png.title} transparent PNG free download`,
-            `${png.title} HD transparent background PNG`,
-            `${png.title} cutout PNG image`,
-            `${png.title} isolated transparent image`,
-            `${png.title} PNG for graphic design`
-          ][getVariant(png.slug, 5)]
-        }"
+        alt="${png.title} PNG transparent background"
 
         fetchpriority="high"
         width="1200"
@@ -221,15 +189,7 @@ app.get("/image/:slug", async (req, res) => {
 
   html = html.replace(
     "<h1>Free Transparent PNG Image</h1>",
-    `<h1>${
-      [
-        `${png.title} PNG Transparent Background`,
-        `${png.title} Transparent PNG Image`,
-        `${png.title} PNG Free Download`,
-        `${png.title} HD Transparent PNG`,
-        `${png.title} PNG Background Transparent`
-      ][getVariant(png.slug, 5)]
-    }</h1>`
+    `<h1>${png.title} PNG Transparent Background</h1>`
   );
 
   const generateDescription = (png) => {
@@ -720,26 +680,36 @@ app.get("/image/:slug", async (req, res) => {
   html = html.replace(
     "</head>",
     `
-  <link rel="image_src"
-  href="${png.previewUrl || png.originalUrl}"></link>
+    <link rel="image_src"
+    href="${png.previewUrl || png.originalUrl}"></link>
 
     <script type="application/ld+json">
-  ${JSON.stringify(schema)}
-  </script>
+    ${JSON.stringify(schema)}
+    </script>
 
-  <script type="application/ld+json">
-  ${JSON.stringify(breadcrumbSchema)}
-  </script>
+    <script type="application/ld+json">
+    ${JSON.stringify(breadcrumbSchema)}
+    </script>
 
-  <link rel="preload"
-  as="image"
-  href="${png.previewUrl || png.originalUrl}"
-  fetchpriority="high">
+    <link rel="preload"
+    as="image"
+    href="${png.previewUrl || png.originalUrl}"
+    fetchpriority="high">
 
-  </head>`
+    </head>`
   );
 
-    res.send(html);
+  html = html.replace(
+    '<div id="dynamicSeoContent"></div>',
+    generateDescription(png)
+  );
+
+  html = html.replace(
+    '<div class="grid"></div>',
+    `<div class="grid">${relatedHTML}</div>`
+  );
+
+  res.send(html);
 });
 
 /* Static frontend */
