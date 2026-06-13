@@ -65,7 +65,7 @@ app.get("/image/:slug", async (req, res) => {
     tags: { $in: png.tags || [] },
     slug: { $ne: png.slug }
   })
-  .limit(12)
+  .limit(24)
   .lean();
 
   let relatedHTML = "";
@@ -455,6 +455,23 @@ app.get("/image/:slug", async (req, res) => {
         This ${category} is suitable for ${usage}.
 
         ${designerLines[getVariant(title + "designer", designerLines.length)]}
+
+        The ${title} PNG image provides a transparent background that makes it easy
+        to use in graphic design projects, websites, advertising materials,
+        presentations, social media content, and digital artwork.
+
+        Designers frequently use ${title} PNG graphics because they can be placed
+        directly onto any background without additional editing.
+
+        This high-resolution PNG file maintains excellent visual quality and can be
+        used for both personal and commercial creative projects.
+
+        Whether you are creating banners, posters, branding assets, thumbnails,
+        presentations, or online content, this transparent PNG resource can help
+        improve your workflow and visual design quality.
+
+        Download this ${title} PNG and explore additional related transparent PNG
+        resources available on PNGfam.
       </p>
 
       <h3>
@@ -511,6 +528,21 @@ app.get("/image/:slug", async (req, res) => {
         People Also Search
       </h3>
 
+      <h3>
+        Related Categories
+      </h3>
+
+      <div class="related-searches">
+
+        <a href="/search?q=animal png">Animals PNG</a>
+        <a href="/search?q=car png">Cars PNG</a>
+        <a href="/search?q=logo png">Logos PNG</a>
+        <a href="/search?q=anime png">Anime PNG</a>
+        <a href="/search?q=flower png">Flowers PNG</a>
+        <a href="/search?q=gaming png">Gaming PNG</a>
+
+      </div>
+
       <div class="related-searches">
 
         ${(tags || []).slice(0, 6).map(tag => `
@@ -527,7 +559,7 @@ app.get("/image/:slug", async (req, res) => {
   };
 
   const dynamicLinks = (png.tags || [])
-    .slice(0, 6)
+    .slice(0, 12)
     .map(tag => {
 
       return `
@@ -541,15 +573,23 @@ app.get("/image/:slug", async (req, res) => {
     .join("");
 
   const keywordLinks = `
-    <div class="seo-links">
+  <div class="seo-links">
 
-      <a href="/search?q=${encodeURIComponent(png.title)}">
-        More ${png.title} PNG
-      </a>
+    <a href="/search?q=${encodeURIComponent(png.title)}">
+      More ${png.title} PNG
+    </a>
 
-      ${dynamicLinks}
+    <a href="/search?q=png">
+      Popular PNG Images
+    </a>
 
-    </div>
+    <a href="/latest">
+      Latest PNG Images
+    </a>
+
+    ${dynamicLinks}
+
+  </div>
   `;
 
   html = html.replace(
@@ -567,6 +607,9 @@ app.get("/image/:slug", async (req, res) => {
     "representativeOfPage": true,
 
     "name": png.title,
+
+    "datePublished": png.createdAt,
+    "dateModified": png.updatedAt,
 
     "description":
       `Download ${png.title} PNG with transparent background in HD quality.`,
@@ -652,6 +695,24 @@ app.get("/image/:slug", async (req, res) => {
     }
   };
 
+  const webPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+
+    "url": `https://www.pngfam.com/image/${png.slug}`,
+
+    "name": `${png.title} PNG Transparent Background`,
+
+    "description":
+      `Download ${png.title} PNG with transparent background.` ,
+
+    "primaryImageOfPage": {
+      "@type": "ImageObject",
+      "contentUrl": png.originalUrl
+
+    }
+  };
+
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -685,6 +746,10 @@ app.get("/image/:slug", async (req, res) => {
 
     <script type="application/ld+json">
     ${JSON.stringify(schema)}
+    </script>
+
+    <script type="application/ld+json">
+    ${JSON.stringify(webPageSchema)}
     </script>
 
     <script type="application/ld+json">
@@ -846,7 +911,7 @@ app.get("/sitemap-images-:page.xml", async (req, res) => {
       .sort({ _id: 1 })
       .skip(skip)
       .limit(limit)
-      .select("slug updatedAt originalUrl")
+      .select("slug updatedAt createdAt originalUrl")
       .lean();
 
     const baseUrl = "https://www.pngfam.com";
