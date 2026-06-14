@@ -89,11 +89,12 @@ app.get("/image/:slug", async (req, res) => {
     path.join(__dirname, "public", "image.html"),
     "utf-8"
   );
+  
   html = html.replace(
-    '<link rel="canonical" id="canonicalLink" href="">',
+    /<link rel="canonical"[^>]*>/,
     `<link rel="canonical" href="https://www.pngfam.com/image/${png.slug}">`
-
   );
+
   html = html.replace(
     '<meta property="og:description" content="Download high-quality PNG with transparent background.">',
     `<meta property="og:description" content="Download ${png.title} PNG with transparent background in HD quality.">`
@@ -101,7 +102,7 @@ app.get("/image/:slug", async (req, res) => {
 
   // Inject SEO (IMPORTANT)
   html = html.replace(
-    "<title>Free Transparent PNG Images Download HD</title>",
+    /<title>.*?<\/title>/,
     `<title>${png.title} PNG Transparent Background | PNGfam</title>`
   );
 
@@ -188,8 +189,8 @@ app.get("/image/:slug", async (req, res) => {
   );
 
   html = html.replace(
-    "<h1>Free Transparent PNG Image</h1>",
-    `<h1>${png.title} PNG Transparent Background</h1>`
+    /<h1 class="image-title">[\s\S]*?<\/h1>/,
+    `<h1 class="image-title">${png.title} PNG Transparent Background</h1>`
   );
 
   const generateDescription = (png) => {
