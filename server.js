@@ -59,6 +59,9 @@ app.get("/image/:slug", async (req, res) => {
     slug: req.params.slug
   }).lean();
 
+  console.log("SEO ROUTE HIT:", req.params.slug);
+  console.log("TITLE GENERATED:", png?.title);
+
   if (!png) {
     return res.status(404).send("Not found");
   }
