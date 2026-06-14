@@ -51,6 +51,8 @@ const getVariant = (text, total) => {
 
 app.get("/image/:slug", async (req, res) => {
 
+  console.log("SEO ROUTE HIT:", req.params.slug);
+
   res.set("Cache-Control", "public, max-age=86400");
   
   const png = await PngImage.findOne({
