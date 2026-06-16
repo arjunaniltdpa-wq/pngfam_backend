@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const { connectDB } = require("./lib/db");
 const pngRoutes = require("./routes/pngRoutes");
@@ -76,21 +77,22 @@ app.get("/image/:slug", async (req, res) => {
   );
 
   html = html.replace(
-    '<meta property="og:description" content="Download high-quality PNG with transparent background.">',
+    /<meta\s+property="og:description"[\s\S]*?content="[^"]*">/i,
     `<meta property="og:description" content="Download ${png.title} PNG with transparent background in HD quality.">`
   );
-
+  
   // Inject SEO (IMPORTANT)
   html = html.replace(
-    /<title>.*?<\/title>/,
+    /<title>[\s\S]*?<\/title>/i,
     `<title>${png.title} PNG Transparent Background | PNGfam</title>`
   );
-
   html = html.replace(
-    '<meta property="og:title" content="Free Transparent PNG Image Download">',
+    /<meta\s+property="og:title"[\s\S]*?content="[^"]*">/i,
     `<meta property="og:title" content="${png.title} PNG Transparent Background">`
   );
-
+  console.log(
+    html.match(/<title>.*?<\/title>/i)?.[0]
+  );
   html = html.replace(
     /<meta property="og:image" content=".*?">/,
     `<meta property="og:image" content="${png.previewUrl || png.originalUrl}">`
@@ -117,7 +119,7 @@ app.get("/image/:slug", async (req, res) => {
   );
 
   html = html.replace(
-    /<meta name="twitter:description" content=".*?">/,
+    /<meta\s+name="twitter:description"[\s\S]*?content="[^"]*">/i,
     `<meta name="twitter:description" content="Download ${png.title} PNG with transparent background in HD quality.">`
   );
 
@@ -126,17 +128,32 @@ app.get("/image/:slug", async (req, res) => {
     `<meta property="og:url" content="https://www.pngfam.com/image/${png.slug}">`
   );
 
-  html = html.replace(
-    'content="Download high-quality transparent PNG images in HD resolution. Free PNG images for graphic design, websites, and creative projects."',
-    `content="${
-    [
+  const descriptions = [
     `Download ${png.title} PNG with transparent background in HD quality.`,
     `Free ${png.title} transparent PNG image for graphic design and websites.`,
     `${png.title} PNG free download with transparent background.`,
     `High-quality ${png.title} transparent PNG image in HD resolution.`,
     `${png.title} PNG transparent background for creative projects and digital design.`
-    ][getVariant(png.slug, 5)]
-    }"`
+  ];
+
+  const dynamicDescription =
+    descriptions[getVariant(png.slug, descriptions.length)];
+
+  console.log("TITLE:", png.title);
+
+  console.log("META DESCRIPTION:", dynamicDescription);
+
+  console.log(
+    html.match(/<title>[\s\S]*?<\/title>/i)?.[0]
+  );
+
+  console.log(
+    html.match(/<meta\s+name="description"[\s\S]*?>/i)?.[0]
+  );
+
+  html = html.replace(
+    /<meta\s+name="description"[\s\S]*?content="[^"]*">/i,
+    `<meta name="description" content="${dynamicDescription}">`
   );
 
   // Inject IMAGE + TITLE directly (CRITICAL)
