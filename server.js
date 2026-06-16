@@ -788,8 +788,6 @@ app.get("/image", (req, res) => {
   res.redirect("/");
 });
 
-const fs = require("fs");
-
 const getVariant = (text, total) => {
   let hash = 0;
 
