@@ -24,31 +24,6 @@ app.use(compression());
 const ogRoutes = require("./routes/ogRoutes");
 app.use("/api/og", ogRoutes);
 
-app.use("/", homeRoutes);
-
-/* Connect DB */
-connectDB();
-
-/* Redirect old query URLs */
-app.get("/image", (req, res) => {
-  if (req.query.slug) {
-    return res.redirect(301, `/image/${req.query.slug}`);
-  }
-  res.redirect("/");
-});
-
-const fs = require("fs");
-
-const getVariant = (text, total) => {
-  let hash = 0;
-
-  for (let i = 0; i < text.length; i++) {
-    hash = text.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  return Math.abs(hash % total);
-};
-
 app.get("/image/:slug", async (req, res) => {
 
   console.log("SEO ROUTE HIT:", req.params.slug);
@@ -782,6 +757,32 @@ app.get("/image/:slug", async (req, res) => {
 
   res.send(html);
 });
+
+app.use("/", homeRoutes);
+
+/* Connect DB */
+connectDB();
+
+/* Redirect old query URLs */
+app.get("/image", (req, res) => {
+  if (req.query.slug) {
+    return res.redirect(301, `/image/${req.query.slug}`);
+  }
+  res.redirect("/");
+});
+
+const fs = require("fs");
+
+const getVariant = (text, total) => {
+  let hash = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return Math.abs(hash % total);
+};
+
 
 /* Static frontend */
 app.use(express.static(path.join(__dirname, "public")));
