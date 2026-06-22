@@ -45,16 +45,44 @@
       return res.status(404).send("Not found");
     }
 
-    console.log("PNG NOT FOUND");
+    let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
 
-    let html = fs.readFileSync(
-      path.join(
-        __dirname,
-        "public",
-        "image.html"
-      ),
-      "utf8"
+    <title>${png.title} PNG Transparent Background | PNGfam</title>
+
+    <meta name="description"
+    content="Download ${png.title} PNG with transparent background in HD quality.">
+
+    <meta property="og:title"
+    content="${png.title} PNG Transparent Background">
+
+    <meta property="og:description"
+    content="Download ${png.title} PNG with transparent background in HD quality.">
+
+    <meta property="og:image"
+    content="${png.previewUrl || png.originalUrl}">
+
+    <meta property="og:url"
+    content="https://www.pngfam.com/image/${png.slug}">
+
+    <link rel="canonical"
+    href="https://www.pngfam.com/image/${png.slug}">
+
+    </head>
+
+    <body>
+
+    <script>
+    window.location.replace(
+    "/image.html?slug=${png.slug}"
     );
+    </script>
+
+    </body>
+    </html>
+    `;
 
     const relatedPngs = await PngImage.find({
       tags: { $in: png.tags || [] },
