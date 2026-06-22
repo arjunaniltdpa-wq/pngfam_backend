@@ -26,6 +26,7 @@ const ogRoutes = require("./routes/ogRoutes");
 app.use("/api/og", ogRoutes);
 
 app.get("/image/:slug", async (req, res) => {
+  try {
 
   console.log("SEO ROUTE HIT:", req.params.slug);
 
@@ -35,12 +36,78 @@ app.get("/image/:slug", async (req, res) => {
     slug: req.params.slug
   }).lean();
 
+  console.log("SLUG:", req.params.slug);
+  console.log("PNG FOUND:", !!png);
   console.log("SEO ROUTE HIT:", req.params.slug);
   console.log("TITLE GENERATED:", png?.title);
 
   if (!png) {
     return res.status(404).send("Not found");
   }
+
+  console.log("PNG NOT FOUND");
+
+  let html = `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+
+  <meta charset="UTF-8">
+
+  <title>${png.title} PNG Transparent Background | PNGfam</title>
+
+  <meta name="description"
+  content="Download ${png.title} PNG with transparent background in HD quality.">
+
+  <link rel="canonical"
+  href="https://www.pngfam.com/image/${png.slug}">
+
+  <meta property="og:title"
+  content="${png.title} PNG Transparent Background">
+
+  <meta property="og:description"
+  content="Download ${png.title} PNG with transparent background.">
+
+  <meta property="og:image"
+  content="${png.previewUrl || png.originalUrl}">
+
+  <meta property="og:url"
+  content="https://www.pngfam.com/image/${png.slug}">
+
+  <meta name="twitter:card"
+  content="summary_large_image">
+
+  <meta name="twitter:title"
+  content="${png.title} PNG Transparent Background">
+
+  <meta name="twitter:image"
+  content="${png.previewUrl || png.originalUrl}">
+
+  <script type="application/ld+json">
+  {
+  "@context":"https://schema.org",
+  "@type":"ImageObject",
+  "name":"${png.title}",
+  "contentUrl":"${png.originalUrl}",
+  "thumbnailUrl":"${png.previewUrl || png.originalUrl}"
+  }
+  </script>
+
+  </head>
+
+  <body>
+
+  <script>
+
+  window.location.replace(
+  "/image.html?slug=${png.slug}"
+  );
+
+  </script>
+
+  </body>
+  </html>
+  `;
 
   const relatedPngs = await PngImage.find({
     tags: { $in: png.tags || [] },
@@ -65,12 +132,7 @@ app.get("/image/:slug", async (req, res) => {
     `;
   });
 
-  // Load your existing HTML file
-  let html = fs.readFileSync(
-    path.join(__dirname, "public", "image.html"),
-    "utf-8"
-  );
-  
+
   html = html.replace(
     /<link rel="canonical"[^>]*>/,
     `<link rel="canonical" href="https://www.pngfam.com/image/${png.slug}">`
@@ -773,6 +835,11 @@ app.get("/image/:slug", async (req, res) => {
   );
 
   res.send(html);
+  } catch (err) {
+    console.error("IMAGE ROUTE ERROR:");
+    console.error(err);
+    res.status(500).send(err.message);
+  }
 });
 
 app.use("/", homeRoutes);
