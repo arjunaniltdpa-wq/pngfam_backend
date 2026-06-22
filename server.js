@@ -788,14 +788,6 @@
   /* Connect DB */
   connectDB();
 
-  /* Redirect old query URLs */
-  app.get("/image", (req, res) => {
-    if (req.query.slug) {
-      return res.redirect(301, `/image/${req.query.slug}`);
-    }
-    res.redirect("/");
-  });
-
   const getVariant = (text, total) => {
     let hash = 0;
 

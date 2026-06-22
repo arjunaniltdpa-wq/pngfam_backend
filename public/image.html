@@ -301,19 +301,6 @@
 </footer>
 
 <script>
-const params = new URLSearchParams(window.location.search);
-const oldSlug = params.get("slug");
-
-if (
-  oldSlug &&
-  window.location.pathname === "/image.html"
-) {
-  window.location.href = `/image/${oldSlug}`;
-  return;
-}
-</script>
-
-<script>
 
 const API = "https://pngfam-backend.onrender.com";
 
