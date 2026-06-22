@@ -308,7 +308,8 @@ if (
   oldSlug &&
   window.location.pathname === "/image.html"
 ) {
-  window.location.replace(`/image/${oldSlug}`);
+  window.location.href = `/image/${oldSlug}`;
+  return;
 }
 </script>
 
@@ -357,11 +358,8 @@ if (
   slug === "image.html" ||
   slug.includes(".html")
 ) {
-  const params =
-  new URLSearchParams(window.location.search);
-
-  slug =
-  params.get("slug");
+  window.location.href = "/";
+  return;
 }
 
 console.log("Slug:", slug); // debug
